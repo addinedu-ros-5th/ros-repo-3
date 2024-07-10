@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/Image">
+        <file>Image/search.png</file>
+        <file>Image/home.png</file>
+        <file>Image/cart.png</file>
+        <file>Image/bag.png</file>
+        <file>Image/watermelon.png</file>
+        <file>Image/up.png</file>
+        <file>Image/down.png</file>
+        <file>Image/minus.png</file>
+        <file>Image/plus.png</file>
+        <file>Image/arrow.png</file>
+        <file>Image/coupang.png</file>
+        <file>Image/banana.png</file>
+        <file>Image/grape.png</file>
+        <file>Image/orange.png</file>
+    </qresource>
+</RCC>
