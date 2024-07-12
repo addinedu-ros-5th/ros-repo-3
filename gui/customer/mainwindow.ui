@@ -126,7 +126,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-158</y>
+         <y>0</y>
          <width>458</width>
          <height>657</height>
         </rect>
@@ -1093,6 +1093,19 @@ image: url(:/Image/Image/arrow.png);</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="clearBtn">
+      <property name="geometry">
+       <rect>
+        <x>370</x>
+        <y>20</y>
+        <width>100</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>비우기</string>
       </property>
      </widget>
     </widget>
