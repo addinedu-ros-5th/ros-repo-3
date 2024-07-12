@@ -1,9 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     ui->stackedWidget->setCurrentIndex(0);
@@ -22,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->addBtn_2, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->addBtn_3, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->addBtn_4, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->clearBtn, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
 }
 
 MainWindow::~MainWindow()
@@ -50,13 +49,24 @@ void MainWindow::minusAmount(QLabel& productCount)
     }
 }
 
+QMap<QString, QWidget*> MainWindow::getCartItems() const
+{
+    return cartItems;
+}
+
+void MainWindow::setCartItems(const QMap<QString, QWidget*> &items)
+{
+    cartItems = items;
+}
+
 void MainWindow::addItem(QLabel& image, QLabel& name, QLabel& amount, QLabel& price)
 {
+    QMap<QString, QWidget*> items = getCartItems();
     QString itemName = name.text();
 
-    if (cartItems.contains(itemName))
+    if (items.contains(itemName))
     {
-        QWidget* itemWidget = cartItems[itemName];
+        QWidget* itemWidget = items[itemName];
         QLabel* amountLabel = itemWidget->findChild<QLabel*>("amountLabel");
         QLabel* totalPriceLabel = itemWidget->findChild<QLabel*>("totalPriceLabel");
 
@@ -69,7 +79,8 @@ void MainWindow::addItem(QLabel& image, QLabel& name, QLabel& amount, QLabel& pr
             totalPriceLabel->setText(QString::number(newTotalPrice));
         }
     }
-    else {
+    else
+    {
         QWidget* itemWidget = new QWidget;
         QHBoxLayout* itemLayout = new QHBoxLayout(itemWidget);
 
@@ -100,74 +111,90 @@ void MainWindow::addItem(QLabel& image, QLabel& name, QLabel& amount, QLabel& pr
 
         ui->cartVBoxLayout->addWidget(itemWidget);
 
-        cartItems[itemName] = itemWidget;
+        items[itemName] = itemWidget;
     }
+    setCartItems(items);
+}
+
+void MainWindow::clearItem()
+{
+    QMap<QString, QWidget*> items = getCartItems();
+    for (auto& item : items)
+    {
+        ui->cartVBoxLayout->removeWidget(item);
+        delete item;
+    }
+    items.clear();
+    setCartItems(items);
 }
 
 void MainWindow::onButtonClicked()
 {
     QPushButton* clickedButton = qobject_cast<QPushButton*>(sender());
-    if(clickedButton)
+    if(!clickedButton) return;
+
+    if (clickedButton == ui->cartBtn)
     {
-        if (clickedButton == ui->cartBtn)
-        {
-            ui->stackedWidget->setCurrentIndex(1);
-        }
-        else if (clickedButton == ui->backBtn)
-        {
-            ui->stackedWidget->setCurrentIndex(0);
-        }
-        else if (clickedButton == ui->plusBtn)
-        {
-            plusAmount(*ui->goodsCount);
-        }
-        else if (clickedButton == ui->plusBtn_2)
-        {
-            plusAmount(*ui->goodsCount_2);
-        }
-        else if (clickedButton == ui->plusBtn_3)
-        {
-            plusAmount(*ui->goodsCount_3);
-        }
-        else if (clickedButton == ui->plusBtn_4)
-        {
-            plusAmount(*ui->goodsCount_4);
-        }
-        else if (clickedButton == ui->minusBtn)
-        {
-            minusAmount(*ui->goodsCount);
-        }
-        else if (clickedButton == ui->minusBtn_2)
-        {
-            minusAmount(*ui->goodsCount_2);
-        }
-        else if (clickedButton == ui->minusBtn_3)
-        {
-            minusAmount(*ui->goodsCount_3);
-        }
-        else if (clickedButton == ui->minusBtn_4)
-        {
-            minusAmount(*ui->goodsCount_4);
-        }
-        else if (clickedButton == ui->addBtn)
-        {
-            addItem(*ui->goodsImage, *ui->goodsName, *ui->goodsCount, *ui->goodsPrice);
-        }
-        else if (clickedButton == ui->addBtn_2)
-        {
-            addItem(*ui->goodsImage_2, *ui->goodsName_2, *ui->goodsCount_2, *ui->goodsPrice_2);
-        }
-        else if (clickedButton == ui->addBtn_3)
-        {
-            addItem(*ui->goodsImage_3, *ui->goodsName_3, *ui->goodsCount_3, *ui->goodsPrice_3);
-        }
-        else if (clickedButton == ui->addBtn_4)
-        {
-            addItem(*ui->goodsImage_4, *ui->goodsName_4, *ui->goodsCount_4, *ui->goodsPrice_4);
-        }
-        else if (clickedButton == ui->buyBtn)
-        {
-            //TODO
-        }
+        ui->stackedWidget->setCurrentIndex(1);
+    }
+    else if (clickedButton == ui->backBtn)
+    {
+        ui->stackedWidget->setCurrentIndex(0);
+    }
+    else if (clickedButton == ui->plusBtn)
+    {
+        plusAmount(*ui->goodsCount);
+    }
+    else if (clickedButton == ui->plusBtn_2)
+    {
+        plusAmount(*ui->goodsCount_2);
+    }
+    else if (clickedButton == ui->plusBtn_3)
+    {
+        plusAmount(*ui->goodsCount_3);
+    }
+    else if (clickedButton == ui->plusBtn_4)
+    {
+        plusAmount(*ui->goodsCount_4);
+    }
+    else if (clickedButton == ui->minusBtn)
+    {
+        minusAmount(*ui->goodsCount);
+    }
+    else if (clickedButton == ui->minusBtn_2)
+    {
+        minusAmount(*ui->goodsCount_2);
+    }
+    else if (clickedButton == ui->minusBtn_3)
+    {
+        minusAmount(*ui->goodsCount_3);
+    }
+    else if (clickedButton == ui->minusBtn_4)
+    {
+        minusAmount(*ui->goodsCount_4);
+    }
+    else if (clickedButton == ui->addBtn)
+    {
+        addItem(*ui->goodsImage, *ui->goodsName, *ui->goodsCount, *ui->goodsPrice);
+    }
+    else if (clickedButton == ui->addBtn_2)
+    {
+        addItem(*ui->goodsImage_2, *ui->goodsName_2, *ui->goodsCount_2, *ui->goodsPrice_2);
+    }
+    else if (clickedButton == ui->addBtn_3)
+    {
+        addItem(*ui->goodsImage_3, *ui->goodsName_3, *ui->goodsCount_3, *ui->goodsPrice_3);
+    }
+    else if (clickedButton == ui->addBtn_4)
+    {
+        addItem(*ui->goodsImage_4, *ui->goodsName_4, *ui->goodsCount_4, *ui->goodsPrice_4);
+    }
+    else if (clickedButton == ui->buyBtn)
+    {
+        //TODO
+    }
+    else if (clickedButton == ui->clearBtn)
+    {
+        clearItem();
     }
 }

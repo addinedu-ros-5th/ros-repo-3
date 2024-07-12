@@ -26,5 +26,10 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QMap<QString, QWidget*> cartItems;
+
+public:
+    void setCartItems(const QMap<QString, QWidget*> &items);
+    QMap<QString, QWidget*> getCartItems() const;
+    void clearItem();
 };
 #endif // MAINWINDOW_H
