@@ -19,17 +19,18 @@ public:
 
 private slots:
     void onButtonClicked();
-    void minusAmount(QLabel& count);
-    void plusAmount(QLabel& count);
-    void addItem(QLabel& image, QLabel& name, QLabel& amount, QLabel& price);
 
 private:
     Ui::MainWindow *ui;
     QMap<QString, QWidget*> cartItems;
 
 public:
+    void minusAmount(QLabel& count);
+    void plusAmount(QLabel& count);
+    void addItem(QLabel& image, QLabel& name, QLabel& amount, QLabel& price);
     void setCartItems(const QMap<QString, QWidget*> &items);
     QMap<QString, QWidget*> getCartItems() const;
     void clearItem();
+    void uploadItem();
 };
 #endif // MAINWINDOW_H

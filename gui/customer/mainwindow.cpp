@@ -1,6 +1,13 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -21,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->addBtn_3, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->addBtn_4, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->clearBtn, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->buyBtn, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
 }
 
 MainWindow::~MainWindow()
@@ -128,6 +136,50 @@ void MainWindow::clearItem()
     setCartItems(items);
 }
 
+void MainWindow::uploadItem()
+{
+    QJsonArray itemsArray;
+    for (auto item : cartItems.keys())
+    {
+        QWidget* itemWidget = cartItems[item];
+        QLabel* amountLabel = itemWidget->findChild<QLabel*>("amountLabel");
+
+        QJsonObject itemObject;
+        itemObject["productName"] = item;
+        itemObject["productAmount"] = amountLabel->text().toInt();
+
+        itemsArray.append(itemObject);
+    }
+
+    QJsonObject json;
+    json["items"] = itemsArray;
+
+    QJsonDocument jsonDoc(json);
+    QByteArray jsonData = jsonDoc.toJson();
+
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    QNetworkRequest request(QUrl("http://address:8080/data/customer_order"));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QNetworkReply* reply = manager->post(request, jsonData);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]()
+    {
+        if (reply->error() == QNetworkReply::NoError)
+        {
+            qDebug() << "Data uploaded successfully";
+            clearItem();
+        }
+        else
+        {
+            qDebug() << "Error uploading data: " << reply->errorString();
+        }
+
+        reply->deleteLater();
+    });
+    qDebug() << "Sending request to server...";
+}
+
 void MainWindow::onButtonClicked()
 {
     QPushButton* clickedButton = qobject_cast<QPushButton*>(sender());
@@ -191,7 +243,7 @@ void MainWindow::onButtonClicked()
     }
     else if (clickedButton == ui->buyBtn)
     {
-        //TODO
+        uploadItem();
     }
     else if (clickedButton == ui->clearBtn)
     {
