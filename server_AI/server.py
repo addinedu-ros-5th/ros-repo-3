@@ -3,6 +3,7 @@ import struct
 import pickle
 import cv2
 import torch
+import threading
 from model import load_model
 
 class Server:
@@ -12,6 +13,7 @@ class Server:
         self.server_socket = None
         self.client_socket = None
         self.model = None
+        self.detected_boxes = []
 
         self.load_model()
 
@@ -63,7 +65,14 @@ class Server:
                 
                 encoded_frame = pickle.loads(frame_data)
                 frame = cv2.imdecode(encoded_frame, cv2.IMREAD_COLOR)
-                self.detect_objects(frame)
+                
+                detection_thread = threading.Thread(target=self.detect_objects, args=(frame,))
+                detection_thread.start()
+                
+                detection_thread.join()
+
+                self.draw_boxes(frame, self.detected_boxes)
+                
                 cv2.imshow('Frame', frame)
                 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -72,36 +81,39 @@ class Server:
         except Exception as e:
             print(f"예외 발생: {e}")
 
-    def preprocess_image(self, frame):
-        resized_frame = cv2.resize(frame, (416, 416))
-        resized_frame = resized_frame.transpose((2, 0, 1))  
-        input_tensor = torch.tensor(resized_frame).float() / 255.0  
-        input_tensor = input_tensor.unsqueeze(0)  
-        return input_tensor
-
     def detect_objects(self, frame):
+       
         input_tensor = self.preprocess_image(frame)
 
         with torch.no_grad():
             outputs = self.model(input_tensor)
-        
-        detected_boxes = self.postprocess_outputs(outputs)
-        
-        for box in detected_boxes:
-            print("box가 인식되었습니다:", box)
+
+        self.detected_boxes = self.postprocess_outputs(outputs)
+
+        if self.detected_boxes:
+            print("box가 인식되었습니다:", self.detected_boxes)
     
+    def draw_boxes(self, frame, boxes):
+        for (x_min, y_min, x_max, y_max) in boxes:
+            cv2.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 0, 255), 2)
+
+    def preprocess_image(self, frame):
+        resized_frame = cv2.resize(frame, (416, 416))
+        resized_frame = resized_frame.transpose((2, 0, 1))
+        input_tensor = torch.tensor(resized_frame).float() / 255.0
+        input_tensor = input_tensor.unsqueeze(0)
+        return input_tensor
+
     def postprocess_outputs(self, outputs):
         detected_boxes = []
 
-        for output in outputs[0]: 
-            if len(output) >= 4:
-                x_center, y_center, width, height = output[:4]
-                x_min = x_center - width / 2
-                y_min = y_center - height / 2
-                x_max = x_center + width / 2
-                y_max = y_center + height / 2
-                detected_boxes.append((x_min, y_min, x_max, y_max))
-        
+        results = outputs[0] 
+        boxes = results.boxes
+
+        for box in boxes:
+            x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
+            detected_boxes.append((x_min, y_min, x_max, y_max))
+
         return detected_boxes
 
     def close_connections(self):
@@ -111,7 +123,7 @@ class Server:
             self.server_socket.close()
 
 if __name__ == "__main__":
-    host = '192.168.2.21'
-    port = 8080
+    host = ''
+    port = 
     video_server = Server(host, port)
     video_server.run()
