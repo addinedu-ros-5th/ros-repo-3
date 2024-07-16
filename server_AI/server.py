@@ -4,74 +4,74 @@ import pickle
 import cv2
 import torch
 import threading
-from model import load_model
+from model import loadModel
 
-class Server:
+class VideoServer:
     def __init__(self, host, port):
         self.host = host
         self.port = port
-        self.server_socket = None
-        self.client_socket = None
+        self.serverSocket = None
+        self.clientSocket = None
         self.model = None
-        self.detected_boxes = []
+        self.detectedBoxes = []
 
-        self.load_model()
+        self.loadModel()
 
-    def load_model(self):
-        self.model = load_model('model/best.pt')
+    def loadModel(self):
+        self.model = loadModel('model/best.pt')
         
     def run(self):
         try:
-            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.server_socket.bind((self.host, self.port))
-            self.server_socket.listen(10)
+            self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.serverSocket.bind((self.host, self.port))
+            self.serverSocket.listen(10)
             
             print('클라이언트 연결 대기')
             
-            self.client_socket, address = self.server_socket.accept()
+            self.clientSocket, address = self.serverSocket.accept()
             print('클라이언트 ip 주소 :', address[0])
             
-            self.receive_frames()
+            self.receiveFrames()
         
         except Exception as e:
             print(f"예외 발생: {e}")
         
         finally:
-            self.close_connections()
+            self.closeConnections()
             cv2.destroyAllWindows()
             print('연결 종료')
     
-    def receive_frames(self):
+    def receiveFrames(self):
         try:
             while True:
-                data_size_packed = self.client_socket.recv(4)
-                if not data_size_packed:
+                dataSizePacked = self.clientSocket.recv(4)
+                if not dataSizePacked:
                     break
                 
-                data_size = struct.unpack(">L", data_size_packed)[0]
+                dataSize = struct.unpack(">L", dataSizePacked)[0]
                 
-                frame_data = b""
-                while len(frame_data) < data_size:
-                    packet = self.client_socket.recv(data_size - len(frame_data))
+                frameData = b""
+                while len(frameData) < dataSize:
+                    packet = self.clientSocket.recv(dataSize - len(frameData))
                     if not packet:
                         break
-                    frame_data += packet
+                    frameData += packet
                 
-                if len(frame_data) < data_size:
+                if len(frameData) < dataSize:
                     print("연결 종료: 프레임 데이터를 모두 수신하지 못했습니다.")
                     break
                 
-                print("수신 프레임 크기 : {} bytes".format(data_size))
+                print("수신 프레임 크기 : {} bytes".format(dataSize))
                 
-                encoded_frame = pickle.loads(frame_data)
-                frame = cv2.imdecode(encoded_frame, cv2.IMREAD_COLOR)
+                encodedFrame = pickle.loads(frameData)
+                frame = cv2.imdecode(encodedFrame, cv2.IMREAD_COLOR)
                 
-                detection_thread = threading.Thread(target=self.detect_objects, args=(frame,))
-                detection_thread.start()
+                detectionThread = threading.Thread(target=self.detectObjects, args=(frame,))
+                detectionThread.start()
                 
-                detection_thread.join()
+                detectionThread.join()
 
-                self.draw_boxes(frame, self.detected_boxes)
+                self.drawBoxes(frame, self.detectedBoxes)
                 
                 cv2.imshow('Frame', frame)
                 
@@ -81,49 +81,49 @@ class Server:
         except Exception as e:
             print(f"예외 발생: {e}")
 
-    def detect_objects(self, frame):
+    def detectObjects(self, frame):
        
-        input_tensor = self.preprocess_image(frame)
+        inputTensor = self.preprocessImage(frame)
 
         with torch.no_grad():
-            outputs = self.model(input_tensor)
+            outputs = self.model(inputTensor)
 
-        self.detected_boxes = self.postprocess_outputs(outputs)
+        self.detectedBoxes = self.postprocessOutputs(outputs)
 
-        if self.detected_boxes:
-            print("box가 인식되었습니다:", self.detected_boxes)
+        if self.detectedBoxes:
+            print("box가 인식되었습니다:", self.detectedBoxes)
     
-    def draw_boxes(self, frame, boxes):
-        for (x_min, y_min, x_max, y_max) in boxes:
-            cv2.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 0, 255), 2)
+    def drawBoxes(self, frame, boxes):
+        for (xMin, yMin, xMax, yMax) in boxes:
+            cv2.rectangle(frame, (int(xMin), int(yMin)), (int(xMax), int(yMax)), (0, 0, 255), 2)
 
-    def preprocess_image(self, frame):
-        resized_frame = cv2.resize(frame, (416, 416))
-        resized_frame = resized_frame.transpose((2, 0, 1))
-        input_tensor = torch.tensor(resized_frame).float() / 255.0
-        input_tensor = input_tensor.unsqueeze(0)
-        return input_tensor
+    def preprocessImage(self, frame):
+        resizedFrame = cv2.resize(frame, (416, 416))
+        resizedFrame = resizedFrame.transpose((2, 0, 1))
+        inputTensor = torch.tensor(resizedFrame).float() / 255.0
+        inputTensor = inputTensor.unsqueeze(0)
+        return inputTensor
 
-    def postprocess_outputs(self, outputs):
-        detected_boxes = []
+    def postprocessOutputs(self, outputs):
+        detectedBoxes = []
 
         results = outputs[0] 
         boxes = results.boxes
 
         for box in boxes:
-            x_min, y_min, x_max, y_max = box.xyxy[0].tolist()
-            detected_boxes.append((x_min, y_min, x_max, y_max))
+            xMin, yMin, xMax, yMax = box.xyxy[0].tolist()
+            detectedBoxes.append((xMin, yMin, xMax, yMax))
 
-        return detected_boxes
+        return detectedBoxes
 
-    def close_connections(self):
-        if self.client_socket:
-            self.client_socket.close()
-        if self.server_socket:
-            self.server_socket.close()
+    def closeConnections(self):
+        if self.clientSocket:
+            self.clientSocket.close()
+        if self.serverSocket:
+            self.serverSocket.close()
 
 if __name__ == "__main__":
-    host = ''
-    port = 
-    video_server = Server(host, port)
-    video_server.run()
+    HOST = '192.168.2.21'
+    PORT = 8080
+    videoServer = VideoServer(HOST, PORT)
+    videoServer.run()
