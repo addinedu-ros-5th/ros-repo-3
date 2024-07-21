@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QDateTime>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -117,7 +118,7 @@ void MainWindow::addItem(QLabel& image, QLabel& name, QLabel& amount, QLabel& pr
         itemLayout->addWidget(amountCopy);
         itemLayout->addWidget(totalPrice);
 
-        ui->cartVBoxLayout->addWidget(itemWidget);
+        ui->cartVBoxLayout->addWidget(itemWidget, 0, Qt::Alignment(Qt::AlignTop));
 
         items[itemName] = itemWidget;
     }
@@ -143,16 +144,21 @@ void MainWindow::uploadItem()
     {
         QWidget* itemWidget = cartItems[item];
         QLabel* amountLabel = itemWidget->findChild<QLabel*>("amountLabel");
+        QLabel* priceLabel = itemWidget->findChild<QLabel*>("totalPriceLabel");
 
         QJsonObject itemObject;
         itemObject["productName"] = item;
         itemObject["productAmount"] = amountLabel->text().toInt();
+        itemObject["productPrice"] = priceLabel->text().toInt();
 
         itemsArray.append(itemObject);
     }
 
     QJsonObject json;
     json["items"] = itemsArray;
+
+    QString orderTime = QDateTime::currentDateTime().toString("yyyy-MM-dd");
+    json["orderTime"] = orderTime;
 
     QJsonDocument jsonDoc(json);
     QByteArray jsonData = jsonDoc.toJson();
@@ -177,8 +183,8 @@ void MainWindow::uploadItem()
 
         reply->deleteLater();
     });
-    qDebug() << "Sending request to server...";
 }
+
 
 void MainWindow::onButtonClicked()
 {
