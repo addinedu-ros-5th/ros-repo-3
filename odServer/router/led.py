@@ -3,7 +3,7 @@ from http import HTTPStatus
 import requests
 
 led = Blueprint("led", __name__)
-url = "http://192.168.137.204:80/led_control"
+url = "http://address:port/led_control"
 
 def request_esp(color):
     response = requests.post(url, params={"color": color})
