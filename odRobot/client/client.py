@@ -66,5 +66,5 @@ class Client:
 if __name__ == "__main__":
     HOST = ''
     PORT = 
-    videoClient = VideoClient(HOST, PORT)
+    videoClient = Client(HOST, PORT)
     videoClient.run()
