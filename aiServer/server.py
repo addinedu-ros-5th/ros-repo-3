@@ -3,13 +3,15 @@ import struct
 import pickle
 import cv2
 import torch
+import requests
 
 from model import load_model
 
 class Server:
-    def __init__(self, host, port):
+    def __init__(self, host, port, odServer_url):
         self.host = host
         self.port = port
+        self.odServer_url = odServer_url
         self.server_socket = None
         self.client_socket = None
         self.robot_model = None
@@ -104,6 +106,22 @@ class Server:
         print("robot가 인식되었습니다:", self.detected_robots)
         print("person가 인식되었습니다:", self.detected_persons)
 
+        self.send_detection_results()
+
+    def send_detection_results(self):
+        results = {
+            "boxes": 1 if self.detected_boxes else 0,
+            "robots": 1 if self.detected_robots else 0,
+            "persons": 1 if self.detected_persons else 0
+        }
+
+        try:
+            response = requests.post(self.odServer_url, json=results)
+            response.raise_for_status()
+            print("객체 감지 결과 전송 성공:", response.status_code)
+        except requests.exceptions.RequestException as e:
+            print(f"객체 감지 결과 전송 중 오류 발생: {e}")
+
     def draw_boxes(self, frame, boxes, color, label):
         for (x_min, y_min, x_max, y_max, confidence) in boxes:
             cv2.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), color, 2)
@@ -147,5 +165,6 @@ class Server:
 if __name__ == "__main__":
     HOST = ''
     PORT = 
-    video_server = Server(HOST, PORT)
-    video_server.run()
+    ODSERVER_URL = ''
+    server = Server(HOST, PORT, ODSERVER_URL)
+    server.run()
