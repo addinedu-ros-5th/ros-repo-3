@@ -26,6 +26,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+install/
+log/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -167,3 +169,5 @@ cython_debug/
 *.pro.user.*
 *.qmake.stash
 *.qmake.cache
+
+*.ini
