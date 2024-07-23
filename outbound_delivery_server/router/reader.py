@@ -1,11 +1,11 @@
 from flask import Blueprint, request, Response
 from http import HTTPStatus
-from ros.outbound_pub import init
+from ros.publisher import pub
 
 reader = Blueprint("reader", __name__)
-outbound_publisher = init()
+publisher = pub()
 
-@reader.route("product", methods=["POST"])
+@reader.route("outbound", methods=["POST"])
 def read_tag():
     data = request.json
     status = data.get("tag_data")

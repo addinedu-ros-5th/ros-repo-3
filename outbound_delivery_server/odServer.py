@@ -1,3 +1,6 @@
+import rclpy
+rclpy.init()
+
 from flask import Flask
 from router.manager import manager
 from router.reader import reader

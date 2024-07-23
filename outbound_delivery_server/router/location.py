@@ -1,9 +1,11 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, Response
 from connection.database import connection
-from ros.outbound_pub import init
+from ros.publisher import pub
+from outbound_delivery_robot_interfaces.msg import Location
+from http import HTTPStatus
 
 location = Blueprint("location", __name__)
-outbound_publisher = init()
+location_publisher = pub()
 
 @location.route("coordinate", methods=["POST"])
 def get_location():
@@ -11,13 +13,22 @@ def get_location():
     conn = connection()
     cursor = conn.cursor()
     
-    query = f"SELECT * FROM location WHERE product={product}"
-    cursor.execute(query)
+    query = f"SELECT * FROM location WHERE product= %s"
+    cursor.execute(query, (product, ))
     
-    result = cursor.fetchall()
-    response = {"location": result}
-
+    result = cursor.fetchall()[0]
+    print(result)
+    
     cursor.close()
     conn.close()
     
-    return jsonify(response)
+    location = Location()
+    location.section = result[1]
+    location.x = result[2]
+    location.y = result[3]
+    location.z = result[4]
+    location.w = result[5]
+    
+    location_publisher.publish_location(location)
+    
+    return Response(None, HTTPStatus.OK)
