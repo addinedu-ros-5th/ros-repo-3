@@ -1,0 +1,7 @@
+topics:
+  - topic_name: /astar_commands  
+    from_domain: 77              
+    to_domain: 63                
+    type_name: std_msgs/msg/String 
+
+services: []
