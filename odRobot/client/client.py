@@ -4,7 +4,7 @@ import pickle
 import struct
 import time
 
-class VideoClient:
+class Client:
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -65,6 +65,6 @@ class VideoClient:
 
 if __name__ == "__main__":
     HOST = ''
-    PORT = 8080
-    videoClient = VideoClient(HOST, PORT)
+    PORT = 
+    videoClient = Client(HOST, PORT)
     videoClient.run()
