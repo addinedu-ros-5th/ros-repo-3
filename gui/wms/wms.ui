@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1270</width>
+    <height>720</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QGroupBox" name="Task_groupBox4">
+   <property name="geometry">
+    <rect>
+     <x>820</x>
+     <y>500</y>
+     <width>421</width>
+     <height>191</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Robot Task</string>
+   </property>
+   <widget class="QTableWidget" name="task_state">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>401</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <row>
+     <property name="text">
+      <string>od_robot1</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>od_robot2</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>od_robot3</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>od_robot4</string>
+     </property>
+    </row>
+    <column>
+     <property name="text">
+      <string>State</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Task</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Goal</string>
+     </property>
+    </column>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="Cam_groupBox2">
+   <property name="geometry">
+    <rect>
+     <x>820</x>
+     <y>10</y>
+     <width>421</width>
+     <height>481</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Robot Cam</string>
+   </property>
+   <widget class="QLabel" name="cam_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>400</width>
+      <height>400</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QSplitter" name="splitter">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>440</y>
+      <width>381</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+    <widget class="QPushButton" name="pushButton_1">
+     <property name="text">
+      <string>od_robot1</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_2">
+     <property name="text">
+      <string>od_robot2</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_3">
+     <property name="text">
+      <string>od_robot3</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_4">
+     <property name="text">
+      <string>od_robot4</string>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="Map_groupBox1">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>781</width>
+     <height>481</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Map</string>
+   </property>
+   <widget class="QLabel" name="map_">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>761</width>
+      <height>441</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="Queue_groupBox3">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>500</y>
+     <width>421</width>
+     <height>191</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Task Queue</string>
+   </property>
+   <widget class="QTableWidget" name="task_queue">
+    <property name="geometry">
+     <rect>
+      <x>15</x>
+      <y>30</y>
+      <width>391</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <column>
+     <property name="text">
+      <string>Task</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Goal</string>
+     </property>
+    </column>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
