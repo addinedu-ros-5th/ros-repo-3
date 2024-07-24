@@ -14,10 +14,10 @@ class PathFollower(Node):
     def path_callback(self, msg):
         self.get_logger().info(f"Received path with {len(msg.poses)} points.")
 
-        # 경로 따라가기
+        
         self.nav.followWaypoints(msg.poses)
 
-        # 경로 완료까지 대기
+        
         while not self.nav.isTaskComplete():
             feedback = self.nav.getFeedback()
             if feedback:
@@ -33,7 +33,7 @@ class PathFollower(Node):
                         self.get_logger().info("Arrived at the Target")
                         break
 
-        # 최종 결과 확인
+        
         result = self.nav.getResult()
         if result == TaskResult.SUCCEEDED:
             self.get_logger().info("Reached the destination successfully!")

@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'outbound_delivery_robot_movement'
+package_name = 'odbot_astar_movement'
 
 setup(
     name=package_name,
@@ -20,8 +20,10 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-        'astar_movement = outbound_delivery_robot_movement.astar_movement:main',
-        'command_publisher = outbound_delivery_robot_movement.command_publisher:main',
+        'astar_movement = odbot_astar_movement.astar_movement:main',
+        'command_publisher = odbot_astar_movement.command_publisher:main',
+        'command_planned = odbot_astar_movement.command_planned:main',
+        'command_path = odbot_astar_movement.command_path:main',
         ],
     },
 )

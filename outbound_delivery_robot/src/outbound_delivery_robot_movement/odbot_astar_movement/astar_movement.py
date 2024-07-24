@@ -17,7 +17,6 @@ class AStarMovement(Node):
         self.publisher_ = self.create_publisher(String, 'astar_commands', 10)
         self.subscription = self.create_subscription(String, 'astar_commands', self.listener_callback, 10)
         self.nav = BasicNavigator()
-        self.nav.waitUntilNav2Active()
         self.targets = {
             '집품 1-1': {'x': 1.185, 'y': 1.456, 'z': -0.003, 'w': 0.999},
             '집품 1-2': {'x': 1.15, 'y': 1.186, 'z': 0.027, 'w': 0.999},
