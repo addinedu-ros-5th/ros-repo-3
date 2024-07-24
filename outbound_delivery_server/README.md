@@ -1,1 +1,0 @@
-This is Outbound Delivery Main Server.
