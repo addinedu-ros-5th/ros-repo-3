@@ -18,29 +18,28 @@ class CameraDetection : public rclcpp::Node
         {
             publisher_ = this->create_publisher<std_msgs::msg::String>("detection", 10);
 
-            CROW_BP_ROUTE(bp, "detection").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
+            CROW_BP_ROUTE(bp, "/detection").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
             {
                 auto data = crow::json::load(req.body);
                 if (!data) { return crow::response(400, "Invalid JSON"); }
-                std::cout << data << std::endl;
 
                 auto boxDetection = data["boxes"];
                 auto robotDetection = data["robots"];
                 auto personDetection = data["persons"];
 
-                if (boxDetection == "1")
+                if (boxDetection == 1)
                 {
                     detection_msg.data = "box";
                     publisher_->publish(detection_msg);
                 }
 
-                if (robotDetection == "1")
+                if (robotDetection == 1)
                 {
                     detection_msg.data = "robot";
                     publisher_->publish(detection_msg);
                 }
 
-                if (personDetection == "1")
+                if (personDetection == 1)
                 {
                     detection_msg.data = "person";
                     publisher_->publish(detection_msg);
