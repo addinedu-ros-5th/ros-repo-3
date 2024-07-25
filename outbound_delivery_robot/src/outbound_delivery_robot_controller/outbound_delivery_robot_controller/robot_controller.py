@@ -2,23 +2,13 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy, QoSProfile
-from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
-from rclpy.duration import Duration
-
 from std_msgs.msg import String
-from outbound_delivery_robot_interfaces.msg import TaskRequest, AStar
-from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped, Twist
-
+from geometry_msgs.msg import PoseWithCovarianceStamped, Twist
+from nav2_simple_commander.robot_navigator import BasicNavigator
 from ament_index_python.packages import get_package_share_directory
-
 import os
-from math import pi, sqrt, atan2
-from tf_transformations import euler_from_quaternion
 
 bt_file = os.path.join(get_package_share_directory('outbound_delivery_robot_behavior'), 'behavior_tree', 'bt.xml')
-
-global amcl
-amcl = PoseWithCovarianceStamped()
 
 class AMCLSubscriber(Node):
     def __init__(self):
@@ -37,164 +27,85 @@ class AMCLSubscriber(Node):
         global amcl
         amcl = msg
 
-class TaskSubscriber(Node):
-    def __init__(self):
-        super().__init__('send_task_subscriber')
+class PersonDetectionSubscriber(Node):
+    def __init__(self, controller):
+        super().__init__('person_detection_subscriber')
 
-        self.subscription = self.create_subscription(
-            TaskRequest,
-            'task',
-            self.listener_callback,
-        10)
-
-    def listener_callback(self, msg):
-        print(msg)
-
-class GoPoseNode(Node):
-    def __init__(self):
-        super().__init__('go_pose_navigator')
-
-        self.goal_handle = None
-        self.result_future = None
-        self.feedback = None
-        self.status = None
-        self.amcl = PoseWithCovarianceStamped()
-        self.navigator = BasicNavigator()
-
-        self.vel_linear = 0.1
-        self.vel_angle = 0.2
-
-        self.done_publisher = self.create_publisher(String, '/done_task', 10)
+        self.create_subscription(String, '/detection', self.person_detection_callback, 10)
         self.cmd_vel_pub = self.create_publisher(Twist, '/base_controller/cmd_vel_unstamped', 10)
-        self.astar_path_sub = self.create_subscription(AStar,
-                                                       'astar_paths',
-                                                       self.astarCallback,
-                                                       10)
+        self.detected = False
+        self.controller = controller
 
-    def astarCallback(self, astar_paths):
-        global amcl
+        self.create_timer(0.1, self.check_person_detection_status)
 
-        if astar_paths.length < 1:
-            print("Invalid Paths")
-            msg = String()
-            msg.data = "REJECT"
-            self.done_publisher.publish(msg)
-            return
-        
-        i = 0
-        while True:
-            goal_pose = PoseStamped()
-            goal_pose.header.frame_id = 'map'
-            goal_pose.header.stamp = self.navigator.get_clock().now().to_msg()
-            goal_pose.pose.position.x = astar_paths.pose[i].position.x
-            goal_pose.pose.position.y = astar_paths.pose[i].position.y
-            goal_pose.pose.orientation.z = astar_paths.poses[i].orientation.z
-            goal_pose.pose.orientation.w = astar_paths.poses[i].orientation.w
-            self.navigator.goToPose(goal_pose, behavior_tree=bt_file)
+    def person_detection_callback(self, msg):
+        if msg.data == "person":
+            self.detected = True
+            self.controller.stop_robot()
+        elif msg.data == "robot":
+            self.detected = True
+            self.controller.avoid_obstacle()
+        else:
+            self.detected = False
 
-            j = 0
-            waiting_count = 0
-            while not self.navigator.isTaskComplete():
-                j += 1
-                feedback = self.navigator.getFeedback()
-                if feedback and j % 5 == 0:
-                    estimated_time = Duration.from_msg(feedback.estimated_time_remaining).nanoseconds / 1e9
-                    print(f'Estimated time of arrival: {estimated_time:.0f} seconds.')
+    def check_person_detection_status(self):
+        if not self.detected:
+            self.controller.resume_robot()
 
-                    if estimated_time == 0 and waiting_count >= 10:
-                        break
-                    waiting_count = waiting_count + 1 if estimated_time == 0 else 0
+class RobotController(Node):
+    def __init__(self):
+        super().__init__('robot_controller')
+        self.navigator = BasicNavigator()
+        self.person_detection_subscriber = PersonDetectionSubscriber(self)
+        self.current_goal_pose = None
 
-                    if Duration.from_msg(feedback.navigation_time) > Duration(seconds=20.0):
-                        self.navigator.cancelTask()
+    def navigate_to_pose(self, pose):
+        self.current_goal_pose = pose
+        self.navigator.goToPose(pose, behavior_tree=bt_file)
+    
+    def stop_robot(self):
+        twist_msg = Twist()
+        twist_msg.linear.x = 0.0
+        twist_msg.angular.z = 0.0
+        self.person_detection_subscriber.cmd_vel_pub.publish(twist_msg)
+        self.get_logger().info('Person detected: Robot stopped.')
 
-            twist_msg = Twist()
-            diff_theta = self.calc_diff_theta(goal_pose.pose.position.x, goal_pose.pose.position.y)
-            before_diff_theta = diff_theta
+    def resume_robot(self):
+       if self.current_goal_pose:
+            self.navigator.goToPose(self.current_goal_pose, behavior_tree=bt_file)
+            self.get_logger().info('Resuming navigation to the goal pose.')
 
-            while diff_theta > 0.01:
-                diff_theta = self.calc_diff_theta(goal_pose.pose.position.x, goal_pose.pose.position.y)
+    def avoid_obstacle(self):
+        self.get_logger().info('Avoiding obstacle!')
 
-                if before_diff_theta < diff_theta:
-                    break
+        twist_msg = Twist()
+        twist_msg.linear.x = 0.0
+        twist_msg.angular.z = 0.2
+        self.person_detection_subscriber.cmd_vel_pub.publish(twist_msg)
 
-                twist_msg.angular.z = -self.vel_angle if diff_theta > (pi / 2) or diff_theta < -(pi / 2) else self.vel_angle
-                self.cmd_vel_pub.publish(twist_msg)
-                before_diff_theta = diff_theta
+        self.create_timer(2.0, self.resume_navigation_after_avoidance)
 
-            twist_msg.angular.z = 0.0
-            self.cmd_vel_pub.publish(twist_msg)
-
-            diff_distance = self.calc_diff_distance(amcl.pose.pose.position.x, goal_pose.pose.position.x, amcl.pose.pose.position.y, goal_pose.pose.position.y)
-            before_diff_distance = diff_distance
-
-            while diff_distance > 0.01:
-                diff_distance = self.calc_diff_distance(amcl.pose.pose.position.x, goal_pose.pose.position.x, amcl.pose.pose.position.y, goal_pose.pose.position.y)
-
-                if before_diff_distance < diff_distance:
-                    break
-
-                twist_msg.linear.x = self.vel_linear
-                self.cmd_vel_pub.publish(twist_msg)
-                before_diff_distance = diff_distance
-
-            twist_msg.linear.x = 0.0
-            self.cmd_vel_pub.publish(twist_msg)
-
-            result = self.navigator.getResult()
-            if diff_distance <= 0.03:
-                self.navigator.cancelTask()
-                if i == astar_paths.length - 1:
-                    print('Goal succeeded!')
-                    msg = String()
-                    msg.data = "OK"
-                    self.done_publisher.publish(msg)
-                    break
-                else:
-                    i += 1
-            elif result == TaskResult.SUCCEEDED:
-                if i == astar_paths.length - 1:
-                    print('Goal succeeded!')
-                    msg = String()
-                    msg.data = "OK"
-                    self.done_publisher.publish(msg)
-                    break
-                else:
-                    i += 1
-            elif result == TaskResult.CANCELED:
-                print('Goal was canceled!')
-            elif result == TaskResult.FAILED:
-                print('Goal failed!')
-            else:
-                print('Goal has an invalid return status!')
-
-    def calc_diff_distance(self, sx, gx, sy, gy):
-        return sqrt(pow(gx - sx, 2) + pow(gy - sy, 2))
-
-    def calc_diff_theta(self, gx, gy):
-        alpha = euler_from_quaternion([0, 0, self.amcl.pose.pose.orientation.z, self.amcl.pose.pose.orientation.w])[2]
-        beta = atan2((gy - self.amcl.pose.pose.position.y), (gx - self.amcl.pose.pose.position.x))
-        return beta - alpha
+    def resume_navigation_after_avoidance(self):
+        self.get_logger().info('Resuming navigation after obstacle avoidance.')
+        if self.current_goal_pose:
+            self.navigator.goToPose(self.current_goal_pose, behavior_tree=bt_file)
 
 def main():
     rclpy.init()
     executor = MultiThreadedExecutor()
-    
-    send_task_subscriber = TaskSubscriber()
-    executor.add_node(send_task_subscriber)
 
-    go_pose_node = GoPoseNode()
-    executor.add_node(go_pose_node)
-
+    robot_controller = RobotController()
     amcl_subscriber = AMCLSubscriber()
+
+    executor.add_node(robot_controller)
     executor.add_node(amcl_subscriber)
+    executor.add_node(robot_controller.person_detection_subscriber)
 
     try:
         executor.spin()
     finally:
         executor.shutdown()
-        send_task_subscriber.destroy_node()
-        go_pose_node.destroy_node()
+        robot_controller.destroy_node()
         amcl_subscriber.destroy_node()
         rclpy.shutdown()
 
