@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'outbound_delivery_robot_controller = outbound_delivery_robot_controller.robot_controller:main'
         ],
     },
 )
