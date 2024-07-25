@@ -41,32 +41,27 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
     def pulling(self):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_data)
-        self.timer.start(1000)
+        self.timer.start(2000)
 
     def check_new_data(self, selected_date):
-        url = f"http://address:port/manager/order?date={selected_date}"
+        url = f"http://192.168.0.79:5000/database/order?date={selected_date}"
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
-        print(data)
         return data
     
     def update_data(self):
         selected_date = self.date_edit.date().toString("yyyyMMdd")
         data = self.check_new_data(selected_date)
-        self.display_orders(data, selected_date)
+        self.display_orders(data)
 
     def display_orders(self, data):
-        items = data.get("order", [])
         current_orders = set()
 
         new_widgets = {}
-        for item in items:
-            order_id = item[0]
-            order_time = item[1]
-            date_format = "%a, %d %b %Y %H:%M:%S %Z"
-            date_obj = datetime.strptime(order_time, date_format)
-            order_time_str = date_obj.strftime("%Y-%m-%d")
+        for item in data:
+            order_id = item['order_id']
+            order_time = item['order_time']
             current_orders.add(order_id)
 
             if order_id in self.widgets:
@@ -77,7 +72,7 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             order_id_label = QLabel(str(order_id))
             order_id_label.setFont(self.font)
             order_id_label.setAlignment(Qt.AlignCenter)
-            order_time_label = QLabel(str(order_time_str))
+            order_time_label = QLabel(order_time)
             order_time_label.setAlignment(Qt.AlignCenter)
             order_button = QPushButton("확인")
             order_button.clicked.connect(lambda _, id=order_id: self.show_order_details(id))
