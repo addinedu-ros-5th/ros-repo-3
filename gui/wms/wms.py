@@ -3,8 +3,14 @@ import os
 import yaml
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
-from PyQt5.QtGui import QPixmap, QTransform, QPainter
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QTransform, QPainter, QPen
+from PyQt5.QtCore import Qt, QTimer
+from threading import Thread
+
+import rclpy as rp
+from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
 # 현재 파일의 디렉토리 경로를 가져옵니다.
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,6 +32,25 @@ with open(yaml_file, 'r') as file:
 # 이미지 파일의 절대 경로를 설정합니다.
 image_path = os.path.join(current_dir, image_file)
 
+# 전역 변수 설정
+robot_position = [0, 0]  # 로봇의 초기 위치(x, y)
+
+# AmclSubscriber 클래스 정의
+class AmclSubscriber(Node):
+    def __init__(self):
+        super().__init__('amcl_subscriber')
+        self.subscription = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose',
+            self.amcl_callback,
+            10
+        )
+
+    def amcl_callback(self, msg):
+        global robot_position
+        robot_position[0] = msg.pose.pose.position.x
+        robot_position[1] = msg.pose.pose.position.y
+
 # 메인 윈도우 클래스 정의
 class WindowClass(QMainWindow, from_class):
     def __init__(self):
@@ -33,6 +58,11 @@ class WindowClass(QMainWindow, from_class):
         self.setupUi(self)
         self.setWindowTitle("OD WMS")
         self.load_map_image()
+
+        # 타이머 설정
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_map)
+        self.timer.start(200)
 
     def load_map_image(self):
         # map QLabel 객체 가져오기
@@ -65,18 +95,51 @@ class WindowClass(QMainWindow, from_class):
         scaled_pixmap = translated_pixmap.scaled(self.width * self.image_scale, self.height * self.image_scale, Qt.KeepAspectRatio)
         self.map_label.setPixmap(scaled_pixmap)
 
-        # 초기 위치 설정
-        self.now_x = 0
-        self.now_y = 0
-
         # map resolution 및 origin 설정
         self.map_resolution = map_yaml_data['resolution']
         self.map_origin = map_yaml_data['origin'][:2]
 
+    def update_map(self):
+        # 기존 pixmap을 기반으로 QPixmap 생성
+        updated_pixmap = QPixmap(self.map_label.pixmap())
+        painter = QPainter(updated_pixmap)
+
+        # 로봇 위치 업데이트 (예제에서는 x, y 좌표를 증가시키고 있음)
+        global robot_position
+
+        # 맵 상의 그리드 위치 계산
+        grid_x, grid_y = self.calc_grid_position(robot_position[0], robot_position[1])
+
+        # 로봇 그리기
+        painter.setPen(QPen(Qt.red, 10))
+        painter.drawPoint(grid_x, grid_y)
+        painter.drawText(grid_x + 10, grid_y, '1')  # 로봇 번호 표시
+        painter.end()
+
+        # QLabel에 업데이트된 pixmap 설정
+        self.map_label.setPixmap(updated_pixmap)
+
+    def calc_grid_position(self, x, y):
+        pos_x = (x - self.map_origin[0]) / self.map_resolution * self.image_scale
+        pos_y = (y - self.map_origin[1]) / self.map_resolution * self.image_scale
+        return int((self.width - pos_x)), int(pos_y)
+
 def main():
+    rp.init()
+    executor = MultiThreadedExecutor()
+
     app = QApplication(sys.argv)
     window = WindowClass()
     window.show()
+
+    # AmclSubscriber 노드 추가
+    amcl_subscriber = AmclSubscriber()
+    executor.add_node(amcl_subscriber)
+
+    # ROS2 스레드 실행
+    thread = Thread(target=executor.spin)
+    thread.start()
+
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
