@@ -1,14 +1,16 @@
 <root main_tree_to_execute="MainTree">
     <BehaviorTree ID="MainTree">
-        <ReactiveFallback name="HandleObstacle">
-            <ReactiveSequence name="PersonDetectedSequence">
+        <ReactiveFallback name="HandlePersonObstacleAndRobot">
+            <Sequence name="PersonDetectedSequence">
                 <IsPersonDetected />
                 <StopRobot />
-                <Sequence name="PersonNotDetectedSequence">
+                <ReactiveSequence name="WaitUntilPersonNotDetectedSequence">
                     <IsPersonNotDetected />
-                    <ResumeRobot />
-                </Sequence>
-            </ReactiveSequence>
+                    <Wait wait_duration="1" />
+                </ReactiveSequence>
+                <ResumeRobot />
+            </Sequence>
+
             <Sequence name="ObstacleDetectedSequence">
                 <IsObstacleDetected />
                 <RecoveryNode number_of_retries="1" name="NavigateRecovery">
@@ -47,6 +49,15 @@
                         </RoundRobin>
                     </ReactiveFallback>
                 </RecoveryNode>
+            </Sequence>
+
+            <Sequence name="RobotDetectedSequence">
+                <IsRobotDetected />
+                <AvoidRobot />
+                <ReactiveSequence name="ContinueNavigationSequence">
+                    <Wait wait_duration="2" />
+                    <ResumeRobot />
+                </ReactiveSequence>
             </Sequence>
         </ReactiveFallback>
     </BehaviorTree>
