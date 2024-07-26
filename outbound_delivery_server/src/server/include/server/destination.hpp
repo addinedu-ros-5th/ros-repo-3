@@ -37,16 +37,16 @@ class Destination : public DatabaseConnection, rclcpp::Node
                 if (res->next())
                 {
                     location_msg.robot_id = std::stoi(robot_id);
-                    location_msg.section = res->getString(1);
-                    location_msg.x = res->getDouble(2);
-                    location_msg.y = res->getDouble(3);
-                    location_msg.z = res->getDouble(4);
-                    location_msg.w = res->getDouble(5);
+                    location_msg.section = res->getString("section");
+                    location_msg.x = res->getDouble("x");
+                    location_msg.y = res->getDouble("y");
+                    location_msg.z = res->getDouble("z");
+                    location_msg.w = res->getDouble("w");
 
                     publisher_->publish(location_msg);
                 }
 
-                return crow::response(200, "Location published successfully");
+                return crow::response(200, "Location published successfully\n");
             });
         }
 
