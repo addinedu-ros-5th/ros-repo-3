@@ -8,6 +8,7 @@
 #include "server/destination.hpp"
 #include "server/led_control.hpp"
 #include "server/camera_detection.hpp"
+#include "server/task_planner.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -20,6 +21,7 @@ int main(int argc, char* argv[])
     Destination destination(configFile);
     LedControl ledControl;
     CameraDetection cameraDetection;
+    TaskPlanner taskPlanner(configFile);
 
     crow::SimpleApp app;
 
@@ -27,6 +29,7 @@ int main(int argc, char* argv[])
     app.register_blueprint(destination.getBlueprint());
     app.register_blueprint(ledControl.getBlueprint());
     app.register_blueprint(cameraDetection.getBlueprint());
+    app.register_blueprint(taskPlanner.getBlueprint());
 
     app.port(5000).multithreaded().run();
 
