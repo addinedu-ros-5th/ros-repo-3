@@ -33,23 +33,29 @@ with open(yaml_file, 'r') as file:
 image_path = os.path.join(current_dir, image_file)
 
 # 전역 변수 설정
-robot_position = [0, 0]  # 로봇의 초기 위치(x, y)
+robot_positions = {
+    'robot1': [-2.75, -1.6],  # 로봇 1의 초기 위치(x, y)
+    'robot2': [-2.85, -1.6],  # 로봇 2의 초기 위치(x, y)
+    'robot3': [-2.95, -1.6],  # 로봇 3의 초기 위치(x, y)
+    'robot4': [-3.05, -1.6]   # 로봇 4의 초기 위치(x, y)
+}
 
 # AmclSubscriber 클래스 정의
 class AmclSubscriber(Node):
-    def __init__(self):
-        super().__init__('amcl_subscriber')
+    def __init__(self, robot_name, topic_name):
+        super().__init__(f'{robot_name}_amcl_subscriber')
+        self.robot_name = robot_name
         self.subscription = self.create_subscription(
             PoseWithCovarianceStamped,
-            '/amcl_pose',
+            topic_name,
             self.amcl_callback,
             10
         )
 
     def amcl_callback(self, msg):
-        global robot_position
-        robot_position[0] = msg.pose.pose.position.x
-        robot_position[1] = msg.pose.pose.position.y
+        global robot_positions
+        robot_positions[self.robot_name][0] = msg.pose.pose.position.x
+        robot_positions[self.robot_name][1] = msg.pose.pose.position.y
 
 # 메인 윈도우 클래스 정의
 class WindowClass(QMainWindow, from_class):
@@ -104,16 +110,25 @@ class WindowClass(QMainWindow, from_class):
         updated_pixmap = QPixmap(self.map_label.pixmap())
         painter = QPainter(updated_pixmap)
 
-        # 로봇 위치 업데이트 (예제에서는 x, y 좌표를 증가시키고 있음)
-        global robot_position
+        # 로봇 위치 업데이트
+        global robot_positions
 
-        # 맵 상의 그리드 위치 계산
-        grid_x, grid_y = self.calc_grid_position(robot_position[0], robot_position[1])
+        # 각 로봇의 위치를 업데이트하고 표시합니다.
+        for robot_name, position in robot_positions.items():
+            grid_x, grid_y = self.calc_grid_position(position[0], position[1])
+            
+            if robot_name == 'robot1':
+                pen = QPen(Qt.red, 10)
+            elif robot_name == 'robot2':
+                pen = QPen(Qt.green, 10)
+            elif robot_name == 'robot3':
+                pen = QPen(Qt.blue, 10)
+            elif robot_name == 'robot4':
+                pen = QPen(Qt.yellow, 10)
+            painter.setPen(pen)
+            painter.drawPoint(grid_x, grid_y)
+            painter.drawText(grid_x + 10, grid_y, robot_name[-1])  # 로봇 번호 표시
 
-        # 로봇 그리기
-        painter.setPen(QPen(Qt.red, 10))
-        painter.drawPoint(grid_x, grid_y)
-        painter.drawText(grid_x + 10, grid_y, '1')  # 로봇 번호 표시
         painter.end()
 
         # QLabel에 업데이트된 pixmap 설정
@@ -133,8 +148,14 @@ def main():
     window.show()
 
     # AmclSubscriber 노드 추가
-    amcl_subscriber = AmclSubscriber()
-    executor.add_node(amcl_subscriber)
+    amcl_subscriber_1 = AmclSubscriber('robot1', 'amcl_pose')
+    amcl_subscriber_2 = AmclSubscriber('robot2', 'amcl_pose_2')
+    amcl_subscriber_3 = AmclSubscriber('robot3', 'amcl_pose_3')
+    amcl_subscriber_4 = AmclSubscriber('robot4', 'amcl_pose_4')
+    executor.add_node(amcl_subscriber_1)
+    executor.add_node(amcl_subscriber_2)
+    executor.add_node(amcl_subscriber_3)
+    executor.add_node(amcl_subscriber_4)
 
     # ROS2 스레드 실행
     thread = Thread(target=executor.spin)
