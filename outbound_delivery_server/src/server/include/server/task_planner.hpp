@@ -1,4 +1,5 @@
 #include <queue>
+#include <vector>
 #include <thread>
 #include <mutex>
 #include <crow.h>
@@ -19,7 +20,7 @@ using json = nlohmann::json;
 class TaskPlanner : public DatabaseConnection
 {
     public:
-        TaskPlanner(const std::string configFile) : DatabaseConnection(configFile) , bp("task")
+        TaskPlanner(const std::string configFile) : DatabaseConnection(configFile) , bp("task"), isNext(4, true)
         {
             CROW_BP_ROUTE(bp, "/manage").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
             {
@@ -32,7 +33,6 @@ class TaskPlanner : public DatabaseConnection
 
                 std::queue<std::string> tasks;
 
-
                 for (const auto& item : items)
                 {
                     tasks.push(std::string(item));
@@ -43,7 +43,7 @@ class TaskPlanner : public DatabaseConnection
 
                 for (int i = 0; i < 4; i++)
                 {
-                    std::cout << "isNext[" << i <<  "]: " << getIsNext(i) << " ";
+                    std::cout << "isNext[" << i + 1 <<  "]: " << getIsNext(i) << " ";
                 }
                 std::cout << std::endl;
                 
@@ -72,7 +72,10 @@ class TaskPlanner : public DatabaseConnection
                 if (process == "finish")
                 {
                     setIsNext(robotId, true);
-                    updateRobotStatus(robotId, "MOVETOSECTION");
+                    for (int i = 0; i < 4; i++)
+                    {
+                        std::cout << "isNext[" << i <<  "]: " << getIsNext(i) << " ";
+                    }
                 }
 
                 return crow::response(200, "Success\n");
@@ -86,17 +89,19 @@ class TaskPlanner : public DatabaseConnection
 
         void setIsNext(int robotId, bool status)
         {
-            isNext[robotId] = status;
+            std::lock_guard<std::mutex> lock(mtx);
+            isNext[robotId - 1] = status;
         }
 
         bool getIsNext(int robotId)
         {
-            return isNext[robotId];
+            std::lock_guard<std::mutex> lock(mtx);
+            return isNext[robotId - 1];
         }
 
     private:
         crow::Blueprint bp;
-        bool isNext[4] = {true, true, true, true};
+        std::vector<char> isNext;
         std::mutex mtx;
         
         int64_t availableRobotId()
@@ -112,7 +117,7 @@ class TaskPlanner : public DatabaseConnection
 
             if (res->next())
             {
-                robotId =  res->getInt64("robot_id");
+                robotId = res->getInt64("robot_id");
             }
             
             return robotId;
@@ -132,9 +137,9 @@ class TaskPlanner : public DatabaseConnection
         {
             std::thread([this, robotId, tasks = std::move(tasks)]() mutable
             {
-                while (tasks.size() > 0)
+                while (!tasks.empty())
                 {
-                    std::lock_guard<std::mutex> lock(mtx);
+                    // std::lock_guard<std::mutex> lock(mtx);
                     if (getIsNext(robotId))
                     {
                         std::string task = tasks.front();
@@ -142,15 +147,16 @@ class TaskPlanner : public DatabaseConnection
                         tasks.pop();
                         std::cout << "task pop Successfully, task size: " << tasks.size() << std::endl;
                         sendTask(robotId, task);
+                        updateRobotStatus(robotId, "MOVETOSECTION");
                         setIsNext(robotId, false);
                         std::cout << "isNext - " << robotId << ": " << getIsNext(robotId) << std::endl;
                     }
                 }
                 for (int i = 0; i < 4; i++)
                 {
-                    std::cout << "isNext[" << i <<  "]: " << getIsNext(i) << " ";
+                    std::cout << "isNext[" << i + 1 <<  "]: " << getIsNext(i) << " ";
                 }
-                updateRobotStatus(robotId, "MOVETOPACKING");
+                std::cout << std::endl;
             }).detach();
         }
 
