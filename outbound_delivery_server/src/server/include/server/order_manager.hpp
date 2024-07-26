@@ -77,7 +77,7 @@ class OrderManager : public DatabaseConnection
 
                 json response = orders;
 
-                return crow::response{response.dump()};
+                return crow::response(response.dump());
             });
 
             CROW_BP_ROUTE(bp, "/order_detail").methods(crow::HTTPMethod::GET)([this](const crow::request& req)
@@ -99,7 +99,7 @@ class OrderManager : public DatabaseConnection
                     orderDetails.push_back(detail);
                 }
 
-                return crow::response{orderDetails.dump()};
+                return crow::response(orderDetails.dump());
             });
         }
 
