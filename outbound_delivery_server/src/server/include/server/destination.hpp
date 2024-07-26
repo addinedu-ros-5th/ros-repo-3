@@ -2,6 +2,7 @@
 
 #include <crow.h>
 #include <memory.h>
+#include <string>
 #include <cppconn/driver.h>
 #include <cppconn/prepared_statement.h>
 #include <cppconn/resultset.h>
@@ -19,17 +20,23 @@ class Destination : public DatabaseConnection, rclcpp::Node
 
             CROW_BP_ROUTE(bp, "/send").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
             {
-                auto data = req.url_params.get("product");
-                if (!data) { return crow::response(400, "Invalid param"); }
+                auto data = crow::json::load(req.body);
+                if (!data) {return crow::response(400, "Invalid JSON"); }
+
+                std::cout << "json data: " << data << std::endl;
+
+                auto robot_id = data["robot_id"].s();
+                auto product = data["task"].s();
 
                 auto conn = Connection();
 
                 std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT * FROM location WHERE product=?"));
-                pstmt->setString(1, data);
+                pstmt->setString(1, std::string(product));
 
                 std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
                 if (res->next())
                 {
+                    location_msg.robot_id = std::stoi(robot_id);
                     location_msg.section = res->getString(1);
                     location_msg.x = res->getDouble(2);
                     location_msg.y = res->getDouble(3);
