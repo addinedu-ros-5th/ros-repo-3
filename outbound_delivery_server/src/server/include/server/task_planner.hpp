@@ -1,21 +1,26 @@
+#pragma once
+
+#include <crow.h>
+
 #include <queue>
 #include <vector>
+#include <string>
+#include <memory.h>
+
+#include <mutex>
 #include <thread>
 #include <chrono>
 #include <condition_variable>
-#include <mutex>
-#include <crow.h>
-#include <crow/json.h>
-#include <string>
-#include <memory.h>
+
 #include <cppconn/driver.h>
 #include <cppconn/prepared_statement.h>
 #include <cppconn/resultset.h>
-#include <nlohmann/json.hpp>
+
 #include <curl/curl.h>
-#include <sstream>
+#include <nlohmann/json.hpp>
 
 #include "database_connection.hpp"
+#include "address.hpp"
 
 using json = nlohmann::json;
 
@@ -29,8 +34,6 @@ class TaskPlanner : public DatabaseConnection
                 auto data = crow::json::load(req.body);
                 if (!data) {return crow::response(400, "Invalid JSON"); }
 
-                std::cout << "json data: " << data << std::endl;
-
                 auto items = data["items"];
 
                 std::queue<std::string> tasks;
@@ -40,20 +43,14 @@ class TaskPlanner : public DatabaseConnection
                     tasks.push(std::string(item));
                 }
 
-                std::cout << "Task: " << tasks.size() << std::endl;
+                std::cout << "Assigned workload: " << tasks.size() << std::endl;
 
                 int robotId = availableRobotId();
-                std::cout << "robot id: " << robotId << std::endl;
-
-                for (int i = 0; i < 4; i++)
-                {
-                    std::cout << "robot id[" << i + 1 <<  "]: " << getIsNext(i + 1) << " ";
-                }
-                std::cout << std::endl;
+                std::cout << "Available robot: " << robotId << std::endl;;
                 
                 if (robotId == -1)
                 {
-                    std::cout << "robot queue is full" << std::endl;
+                    std::cout << "All robots are assigned" << std::endl;
                 }
                 else
                 {
@@ -71,17 +68,10 @@ class TaskPlanner : public DatabaseConnection
                 int robotId = data["robot_id"].i();
                 std::string process = data["process"].s();
 
-                std::cout << "robotId: " << robotId << " process: " << process << std::endl;
-
                 if (process == "finish")
                 {
                     setIsNext(robotId, true);
                     cv.notify_all();
-                    for (int i = 0; i < 4; i++)
-                    {
-                        std::cout << "robot id[" << i + 1 <<  "]: " << getIsNext(i + 1) << " ";
-                    }
-                    std::cout << std::endl;
                 }
 
                 return crow::response(200, "Success\n");
@@ -108,23 +98,23 @@ class TaskPlanner : public DatabaseConnection
         std::vector<bool> isNext;
         std::mutex mtx;
         std::condition_variable cv;
-
-        inline void delay(int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
+        IpAddress ipAddress;
         
-        int64_t availableRobotId()
+        int availableRobotId()
         {
             auto conn = Connection();
 
-            std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT robot_id FROM robot_status WHERE robot_status = ? ORDER BY robot_battery DESC"));
+            std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT * FROM robot_status WHERE robot_status = ? AND robot_battery >= ? ORDER BY robot_battery DESC"));
             pstmt->setString(1, "CHARGING");
+            pstmt->setInt(2, 30);
             
             std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
 
-            int64_t robotId = -1;
+            int robotId = -1;
 
             if (res->next())
             {
-                robotId = res->getInt64("robot_id");
+                robotId = res->getInt("robot_id");
             }
             
             return robotId;
@@ -135,7 +125,7 @@ class TaskPlanner : public DatabaseConnection
             auto conn = Connection();
             std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("UPDATE robot_status SET robot_status = ? WHERE robot_id = ?"));
             pstmt->setString(1, status);
-            pstmt->setInt64(2, robotId);
+            pstmt->setInt(2, robotId);
             pstmt->execute();
             std::cout << "Update status successfully : " << status << std::endl;
         }
@@ -174,15 +164,15 @@ class TaskPlanner : public DatabaseConnection
             }).detach();
         }
 
-        void sendTask(int64_t robotId, std::string task)
+        void sendTask(int robotId, std::string task)
         {
             json data;
             data["robot_id"] = std::to_string(robotId);
             data["task"] = task;
-
             std::string jsonData = data.dump();
-            std::string url = "http://192.168.0.79:5000/destination/send";
-            std::cout << "url: " << url << std::endl;
+
+            std::string ip = ipAddress.getLocalIP();
+            std::string url = "http://" + ip + ":5000/destination/send";
 
             CURL* curl = curl_easy_init();
             if (!curl) { return; }
@@ -195,7 +185,6 @@ class TaskPlanner : public DatabaseConnection
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonData.c_str());
             curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, jsonData.size());
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-            // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
             CURLcode res = curl_easy_perform(curl);
             if (res != CURLE_OK)
