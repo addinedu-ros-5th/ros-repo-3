@@ -72,20 +72,27 @@ class AStarPlanner:
             return str(self.x) + "," + str(self.y) + "," + str(self.cost) + "," + str(self.parent_index)
 
     def planning(self, sx_real, sy_real, gx_real, gy_real):
+        # 좌표 변환
         sx = (sx_real - self.map_origin[0]) / self.map_resolution
         sy = (sy_real - self.map_origin[1]) / self.map_resolution
         gx = (gx_real - self.map_origin[0]) / self.map_resolution
         gy = (gy_real - self.map_origin[1]) / self.map_resolution
+        
+        # 시작과 목표 노드
         start_node = self.Node(self.calc_xy_index(sx, self.min_x), self.calc_xy_index(sy, self.min_y), 0.0, -1)
         goal_node = self.Node(self.calc_xy_index(gx, self.min_x), self.calc_xy_index(gy, self.min_y), 0.0, -1)
+        
+        # 오픈 셋과 클로즈드 셋
         open_set, closed_set = dict(), dict()
         open_set[self.calc_grid_index(start_node)] = start_node
+        
         is_starting = True
         
         while True:
             if len(open_set) == 0:
                 print("Open set is empty..")
                 break
+            
             c_id = min(open_set, key=lambda o: open_set[o].cost + self.calc_manhattan(goal_node, open_set[o]))
             current = open_set[c_id]
             
@@ -110,7 +117,7 @@ class AStarPlanner:
                     is_turned = before_vector != now_vector
                 
                 node = self.Node(current.x + self.motion[i][0], current.y + self.motion[i][1],
-                                 current.cost + self.motion[i][2] * (1 + is_turned), c_id, now_vector)
+                                current.cost + self.motion[i][2] * (1 + is_turned), c_id, now_vector)
                 
                 n_id = self.calc_grid_index(node)
                 
@@ -127,7 +134,7 @@ class AStarPlanner:
                         open_set[n_id] = node
                 
                 is_starting = False
-        
+            
         rx, ry, tpx, tpy, tvec_x, tvec_y = self.calc_final_path(goal_node, closed_set)
         
         for i in range(len(tpx)):
@@ -136,6 +143,7 @@ class AStarPlanner:
         
         print(tpx, tpy, tvec_x, tvec_y)
         return tpx, tpy
+
 
     def calc_final_path(self, goal_node, closed_set):
         rx, ry = [self.calc_grid_position(goal_node.x, self.min_x)], [
