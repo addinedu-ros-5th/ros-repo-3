@@ -23,8 +23,6 @@ class Destination : public DatabaseConnection, rclcpp::Node
                 auto data = crow::json::load(req.body);
                 if (!data) {return crow::response(400, "Invalid JSON"); }
 
-                std::cout << "json data: " << data << std::endl;
-
                 auto robot_id = data["robot_id"].s();
                 auto product = data["task"].s();
 
