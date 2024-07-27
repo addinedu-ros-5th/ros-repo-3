@@ -1,6 +1,8 @@
 #include <queue>
 #include <vector>
 #include <thread>
+#include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include <crow.h>
 #include <crow/json.h>
@@ -38,12 +40,14 @@ class TaskPlanner : public DatabaseConnection
                     tasks.push(std::string(item));
                 }
 
+                std::cout << "Task: " << tasks.size() << std::endl;
+
                 int robotId = availableRobotId();
                 std::cout << "robot id: " << robotId << std::endl;
 
                 for (int i = 0; i < 4; i++)
                 {
-                    std::cout << "isNext[" << i + 1 <<  "]: " << getIsNext(i) << " ";
+                    std::cout << "robot id[" << i + 1 <<  "]: " << getIsNext(i + 1) << " ";
                 }
                 std::cout << std::endl;
                 
@@ -53,7 +57,6 @@ class TaskPlanner : public DatabaseConnection
                 }
                 else
                 {
-                    updateRobotStatus(robotId, "MOVETOSECTION");
                     assignTasksToRobot(robotId, std::move(tasks));
                 }
 
@@ -68,14 +71,17 @@ class TaskPlanner : public DatabaseConnection
                 int robotId = data["robot_id"].i();
                 std::string process = data["process"].s();
 
-                std::lock_guard<std::mutex> lock(mtx);
+                std::cout << "robotId: " << robotId << " process: " << process << std::endl;
+
                 if (process == "finish")
                 {
                     setIsNext(robotId, true);
+                    cv.notify_all();
                     for (int i = 0; i < 4; i++)
                     {
-                        std::cout << "isNext[" << i <<  "]: " << getIsNext(i) << " ";
+                        std::cout << "robot id[" << i + 1 <<  "]: " << getIsNext(i + 1) << " ";
                     }
+                    std::cout << std::endl;
                 }
 
                 return crow::response(200, "Success\n");
@@ -89,20 +95,21 @@ class TaskPlanner : public DatabaseConnection
 
         void setIsNext(int robotId, bool status)
         {
-            std::lock_guard<std::mutex> lock(mtx);
             isNext[robotId - 1] = status;
         }
 
         bool getIsNext(int robotId)
         {
-            std::lock_guard<std::mutex> lock(mtx);
             return isNext[robotId - 1];
         }
 
     private:
         crow::Blueprint bp;
-        std::vector<char> isNext;
+        std::vector<bool> isNext;
         std::mutex mtx;
+        std::condition_variable cv;
+
+        inline void delay(int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
         
         int64_t availableRobotId()
         {
@@ -130,33 +137,40 @@ class TaskPlanner : public DatabaseConnection
             pstmt->setString(1, status);
             pstmt->setInt64(2, robotId);
             pstmt->execute();
-            std::cout << "Update Successfully" << std::endl;
+            std::cout << "Update status successfully : " << status << std::endl;
         }
 
         void assignTasksToRobot(int robotId, std::queue<std::string> tasks)
         {
+            std::cout << "Creating thread for robot " << robotId << std::endl;
             std::thread([this, robotId, tasks = std::move(tasks)]() mutable
             {
+
                 while (!tasks.empty())
                 {
-                    // std::lock_guard<std::mutex> lock(mtx);
                     if (getIsNext(robotId))
                     {
                         std::string task = tasks.front();
-                        std::cout << "current task: " << task << std::endl;
+                        std::cout << "Current task: " << task << std::endl;
                         tasks.pop();
-                        std::cout << "task pop Successfully, task size: " << tasks.size() << std::endl;
+                        std::cout << "Task pop Successfully, task size: " << tasks.size() << std::endl;
                         sendTask(robotId, task);
                         updateRobotStatus(robotId, "MOVETOSECTION");
                         setIsNext(robotId, false);
-                        std::cout << "isNext - " << robotId << ": " << getIsNext(robotId) << std::endl;
+                        std::cout << "robotId[" << robotId << "]: " << getIsNext(robotId) << std::endl;
                     }
                 }
-                for (int i = 0; i < 4; i++)
+
                 {
-                    std::cout << "isNext[" << i + 1 <<  "]: " << getIsNext(i) << " ";
+                    std::unique_lock<std::mutex> lock(mtx);
+                    cv.wait(lock, [this, robotId] { return getIsNext(robotId); });
                 }
-                std::cout << std::endl;
+
+                if (tasks.empty())
+                {
+                    updateRobotStatus(robotId, "MOVETOPACKING");
+                }
+                std::cout << "Thread ending for robot " << robotId << std::endl;
             }).detach();
         }
 
@@ -181,7 +195,7 @@ class TaskPlanner : public DatabaseConnection
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonData.c_str());
             curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, jsonData.size());
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-            curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+            // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
             CURLcode res = curl_easy_perform(curl);
             if (res != CURLE_OK)
