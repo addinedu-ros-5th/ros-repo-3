@@ -4,23 +4,26 @@ from nav_msgs.msg import Path
 from nav2_simple_commander.robot_navigator import BasicNavigator, PoseStamped, TaskResult
 import math
 from geometry_msgs.msg import PoseWithCovarianceStamped
-from std_msgs.msg import Header
+from std_msgs.msg import Header, String
 import time
 
 class PathFollower(Node):
     def __init__(self):
         super().__init__('path_follower')
         
+        self.robot_id = '1'
+        self.current_robot_id = None
+        
         self.initial_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, '/initialpose', 10)
 
-        
+        self.id_subscription = self.create_subscription(String, 'robot_id', self.id_callback, 10)
         self.subscription = self.create_subscription(Path, 'planned_path', self.path_callback, 10)
         self.nav = BasicNavigator()
         self.nav.waitUntilNav2Active()
         
         self.publish_initial_pose()
         
-        time.sleep(2)
+        time.sleep(3)
 
     def publish_initial_pose(self):
         pose_msg = PoseWithCovarianceStamped()
@@ -28,8 +31,8 @@ class PathFollower(Node):
         pose_msg.header.frame_id = 'map'
         pose_msg.header.stamp = self.get_clock().now().to_msg()
         
-        pose_msg.pose.pose.position.x = 0.03
-        pose_msg.pose.pose.position.y = -0.3
+        pose_msg.pose.pose.position.x = 0.0
+        pose_msg.pose.pose.position.y = 0.2
         pose_msg.pose.pose.position.z = 0.0
         pose_msg.pose.pose.orientation.x = 0.0
         pose_msg.pose.pose.orientation.y = 0.0
@@ -41,7 +44,16 @@ class PathFollower(Node):
         self.initial_pose_publisher.publish(pose_msg)
         self.get_logger().info("Published initial pose")
     
+    def id_callback(self, msg):
+        self.current_robot_id = msg.data
+        self.get_logger().info(f"Received Robot ID: {self.current_robot_id}")
+    
+    
     def path_callback(self, msg):
+        
+        if self.current_robot_id != self.robot_id:
+            return
+        
         self.get_logger().info(f"Received path with {len(msg.poses)} points.")
 
         # 경로 따라가기
@@ -79,3 +91,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
