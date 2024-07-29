@@ -2,6 +2,7 @@ import os
 import sys
 import requests
 from datetime import datetime
+import mysql.connector
 
 from PyQt5 import uic
 from PyQt5.QtGui import *
@@ -24,6 +25,9 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.pulling()
         self.update_data()
 
+        self.order_details = []
+        self.current_detail_index = 0
+
     def ui_init(self):
         self.setupUi(self)
         self.setWindowTitle("OD Worker")
@@ -38,13 +42,25 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.date_edit.setDisplayFormat("yyyy-MM-dd")
         self.date_edit.dateChanged.connect(self.update_data)
 
+        self.detail_page = QWidget()
+        self.detail_layout = QVBoxLayout(self.detail_page)
+
+        self.detail_form_layout = QFormLayout()
+        self.detail_layout.addLayout(self.detail_form_layout)
+
+        self.next_button = QPushButton("다음 물품")
+        self.next_button.clicked.connect(self.show_next_detail)
+        self.detail_layout.addWidget(self.next_button)
+
+        self.stackedWidget.addWidget(self.detail_page)
+
     def pulling(self):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_data)
         self.timer.start(2000)
 
     def check_new_data(self, selected_date):
-        url = f"http://192.168.0.79:5000/database/order?date={selected_date}"
+        url = f""
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
@@ -92,9 +108,84 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.orders_displayed = current_orders
         self.widgets.update(new_widgets)
 
-    def show_order_details(self):
-        # TODO
-        pass
+    def show_order_details(self, order_id):
+        url = ""
+        params = {'order_id': order_id}
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        self.order_details = response.json()
+        self.current_detail_index = 0
+        self.show_next_detail()
+
+    def show_next_detail(self):
+        if self.current_detail_index < len(self.order_details):
+            detail = self.order_details[self.current_detail_index]
+            product_name = detail['product_name']
+            quantity = str(detail['quantity'])
+
+            image_path = self.get_image_path_from_db(product_name)
+            pixmap = QPixmap(image_path) if image_path and os.path.exists(image_path) else QPixmap()
+
+            for i in reversed(range(self.detail_form_layout.count())):
+                item = self.detail_form_layout.itemAt(i)
+                if item:
+                    widget = item.widget()
+                    if widget:
+                        widget.deleteLater()
+
+            product_label = QLabel(f"물품: {product_name}")
+            quantity_label = QLabel(f"수량: {quantity}")
+            product_label.setFont(self.font)
+            quantity_label.setFont(self.font)
+
+            image_label = QLabel()
+            image_label.setPixmap(pixmap)
+            image_label.setScaledContents(True)
+            image_label.setFixedSize(300, 300)
+
+            self.detail_form_layout.addRow(product_label)
+            self.detail_form_layout.addRow(quantity_label)
+            self.detail_form_layout.addRow(image_label)
+
+            if self.current_detail_index < len(self.order_details) - 1:
+                self.next_button.setText("다음 물품")
+            else:
+                self.next_button.setText("담기 완료")
+
+
+            self.stackedWidget.setCurrentWidget(self.detail_page)
+            self.current_detail_index += 1
+        else:
+            self.stackedWidget.setCurrentWidget(self.order_page)
+
+    def get_image_path_from_db(self, product_name):
+        db_config = {
+            'user' : '',
+            'password' : '',
+            'host' : '',
+            'database' : ''
+        }
+
+        try:
+            conn = mysql.connector.connect(**db_config)
+            cursor = conn.cursor(dictionary=True)
+
+            query = "SELECT image_path FROM product_image_path WHERE product_name = %s"
+            cursor.execute(query, (product_name,))
+            result = cursor.fetchone()
+
+            return result['image_path'] if result else None
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def show_order_page(self):
+        self.stackedWidget.setCurrentWidget(self.order_page)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
