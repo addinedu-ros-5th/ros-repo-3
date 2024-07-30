@@ -1,6 +1,6 @@
 database:
-  host: "ros-3.c1muaciq2dw4.ap-northeast-2.rds.amazonaws.com"
-  port: 3306
-  username: "ros3"
-  password: "ros3#"
-  name: "rosProject"
+  host: ""
+  port: 
+  username: ""
+  password: ""
+  name: ""
