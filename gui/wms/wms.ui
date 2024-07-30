@@ -108,22 +108,22 @@
     <property name="orientation">
      <enum>Qt::Horizontal</enum>
     </property>
-    <widget class="QPushButton" name="pushButton_1">
+    <widget class="QPushButton" name="cam_btn1">
      <property name="text">
       <string>od_robot1</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton_2">
+    <widget class="QPushButton" name="cam_btn2">
      <property name="text">
       <string>od_robot2</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton_3">
+    <widget class="QPushButton" name="cam_btn3">
      <property name="text">
       <string>od_robot3</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton_4">
+    <widget class="QPushButton" name="cam_btn4">
      <property name="text">
       <string>od_robot4</string>
      </property>
