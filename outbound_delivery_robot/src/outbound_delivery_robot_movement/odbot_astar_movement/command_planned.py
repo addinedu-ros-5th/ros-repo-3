@@ -1,51 +1,83 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from geometry_msgs.msg import PoseStamped, Quaternion
+from geometry_msgs.msg import PoseStamped, Quaternion, PoseWithCovarianceStamped
 from nav_msgs.msg import Path
 from Class.Astar import AStarPlanner
-from nav2_simple_commander.robot_navigator import BasicNavigator, PoseStamped, TaskResult
 from outbound_delivery_robot_interfaces.msg import Location
+from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
+
 
 class AStarMovement(Node):
     def __init__(self):
         super().__init__('a_star_path_planning')
+        
+        self.robot_initial_position = {
+            1: (0, 0.2),
+            2: (0, -0.1),
+            3: (0, -0.4),
+            4: (0, -0.7)
+        }
+        
+        self.robot_current_position = {
+            1: None,
+            2: None,
+            3: None,
+            4: None
+        }
+        
         self.path_publisher = self.create_publisher(Path, 'planned_path', 10)
         self.id_publisher = self.create_publisher(String, 'robot_id', 10)
+        self.pose_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.pose_callback, 10)
         self.location_subscription = self.create_subscription(Location, 'location', self.location_callback, 10)
-        # Ensure the subscription is not garbage collected
+        
         self.add_on_set_parameters_callback(self.parameter_callback)
+
 
     def parameter_callback(self, params):
         self.get_logger().info("Parameter callback triggered")
         return rclpy.node.Node.CallbackReturn.SUCCESS
 
+    def pose_callback(self, msg):
+        robot_id = 1
+        self.robot_current_position[robot_id] = (msg.pose.pose.position.x, msg.pose.pose.position.y)
+        self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
+
     def location_callback(self, msg):
+
         self.get_logger().info(f"Location callback triggered")
         self.get_logger().info(f"Received location: robot ID = {msg.robot_id}, section={msg.section}, x={msg.x}, y={msg.y}, z={msg.z}, w={msg.w}")
         self.move_to_target(msg)
-    
+
     def move_to_target(self, location):
-        target_pose = {
-            'x': location.x,
-            'y': location.y,
-            'z': location.z,
-            'w': location.w
-        }
-        self.get_logger().info(f"Moving to {location.section} at position ({target_pose['x']}, {target_pose['y']})...")
         
-        a_star = AStarPlanner(resolution=1, rr=0.3, padding=3)
+        robot_id = location.robot_id
         
-        sx_real, sy_real = 0.0, 0.0
-        gx_real, gy_real = target_pose['x'], target_pose['y']
+        if self.robot_current_position[robot_id]:
+            sx_real, sy_real = self.robot_current_position[robot_id]
+        else:
+            sx_real, sy_real = self.robot_initial_position[robot_id]
         
+
+        gx_real = location.x
+        gy_real = location.y
+        
+        sx_real = round(sx_real, 2)
+        sy_real = round(sy_real, 2)
+        gx_real = round(gx_real, 2)
+        gy_real = round(gy_real, 2)
+
+
+        self.get_logger().info(f"Moving to {location.section} from position ({sx_real}, {sy_real}) to ({gx_real}, {gy_real})")
+
+        a_star = AStarPlanner(resolution=1, rr=1, padding=3)
+
         tpx, tpy = a_star.planning(sx_real, sy_real, gx_real, gy_real)
-        
+
         path = Path()
-        
         path.header.frame_id = 'map'
         path.header.stamp = self.get_clock().now().to_msg()
-        
+
         for x, y in zip(tpx, tpy):
             pose = PoseStamped()
             pose.header.frame_id = 'map'
@@ -54,13 +86,10 @@ class AStarMovement(Node):
             pose.pose.position.y = y
             pose.pose.orientation = Quaternion(w=1.0)
             path.poses.append(pose)
-        
+
         self.path_publisher.publish(path)
         self.get_logger().info(f"Path to {location.section} published")
-        
-        # Example: If you want to send both robot ID and path in a single message
-        # Create a new message type if needed
-        # For simplicity, we're just publishing the robot ID here
+
         id_msg = String()
         id_msg.data = str(location.robot_id)
         self.id_publisher.publish(id_msg)
@@ -75,4 +104,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
