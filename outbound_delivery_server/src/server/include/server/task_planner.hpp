@@ -27,7 +27,7 @@ using json = nlohmann::json;
 class TaskPlanner : public DatabaseConnection
 {
     public:
-        TaskPlanner(const std::string configFile) : DatabaseConnection(configFile) , bp("task"), isNext(4, true)
+        TaskPlanner(const std::string configFile) : DatabaseConnection(configFile) , bp("task"), isNext(4, true), isEnd(4, false)
         {
             CROW_BP_ROUTE(bp, "/manage").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
             {
@@ -60,7 +60,7 @@ class TaskPlanner : public DatabaseConnection
                 return crow::response(200, "Success\n");
             });
 
-            CROW_BP_ROUTE(bp, "/task_process").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
+            CROW_BP_ROUTE(bp, "/process").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
             {
                 auto data = crow::json::load(req.body);
                 if (!data) { return crow::response(400, "Invalid JSON"); }
@@ -68,10 +68,34 @@ class TaskPlanner : public DatabaseConnection
                 int robotId = data["robot_id"].i();
                 std::string process = data["process"].s();
 
-                if (process == "finish")
+                if (process == "arrival")
+                {
+                    setRobotStatus(robotId, "Picking")
+                }
+                else if (process == "finish")
                 {
                     setIsNext(robotId, true);
                     cv.notify_all();
+                }
+
+                return crow::response(200, "Success\n");
+            });
+
+            CROW_BP_ROUTE(bp, "/end").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
+            {
+                auto data = crow::json::load(req.body);
+                if (!data) { return crow::response(400, "Invalid JSON"); }
+
+                std::string process = data["process"].s();
+                std::vector<int>robotId;
+
+                if (process == "end")
+                {
+                    robotId = getRobotId("Unloading");
+                    for(int index = 0; index < robotId.size(); index++)
+                    {
+                        setIsEnd(robotId[index], true);
+                    }
                 }
 
                 return crow::response(200, "Success\n");
@@ -93,9 +117,20 @@ class TaskPlanner : public DatabaseConnection
             return isNext[robotId - 1];
         }
 
+        void setIsEnd(int robotId, bool status)
+        {
+            isEnd[robotId - 1] = status;
+        }
+
+        bool getIsEnd(int robotId)
+        {
+            return isEnd[robotId - 1];
+        }
+
     private:
         crow::Blueprint bp;
         std::vector<bool> isNext;
+        std::vector<bool> isEnd;
         std::mutex mtx;
         std::condition_variable cv;
         IpAddress ipAddress;
@@ -120,14 +155,49 @@ class TaskPlanner : public DatabaseConnection
             return robotId;
         }
 
-        void updateRobotStatus(int robotId, std::string status)
+        void setRobotStatus(int robotId, std::string status)
         {
             auto conn = Connection();
+
             std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("UPDATE robot_status SET robot_status = ? WHERE robot_id = ?"));
             pstmt->setString(1, status);
             pstmt->setInt(2, robotId);
             pstmt->execute();
             std::cout << "Update status successfully : " << status << std::endl;
+        }
+
+        std::string getRobotStatus(int robotId)
+        {
+            auto conn = Connection();
+
+            std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT robot_status FROM robot_status WHERE robot_id = ?"));
+            pstmt->setInt(1, robotId);
+
+            std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+            res->next();
+
+            std::string robotStatus = res->getInt("robot_status");
+            
+            return robotStatus;
+        }
+
+        std::vector<int> getRobotId(std::string robotStatus)
+        {
+            auto conn = Connection();
+
+            std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT robot_id FROM robot_status WHERE robot_status = ?"));
+            pstmt->setString(1, robotStatus);
+
+            std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+
+            std::vector<int> robotId;
+
+            while(res->next())
+            {
+                robotId.push_back(res->getInt("robot_id"));
+            }
+            
+            return robotId;
         }
 
         void assignTasksToRobot(int robotId, std::queue<std::string> tasks)
@@ -145,7 +215,7 @@ class TaskPlanner : public DatabaseConnection
                         tasks.pop();
                         std::cout << "Task pop Successfully, task size: " << tasks.size() << std::endl;
                         sendTask(robotId, task);
-                        updateRobotStatus(robotId, "MOVETOSECTION");
+                        setRobotStatus(robotId, "MOVETOSECTION");
                         setIsNext(robotId, false);
                         std::cout << "robotId[" << robotId << "]: " << getIsNext(robotId) << std::endl;
                     }
@@ -158,8 +228,17 @@ class TaskPlanner : public DatabaseConnection
 
                 if (tasks.empty())
                 {
-                    updateRobotStatus(robotId, "MOVETOPACKING");
+                    sendTask(robotId, "포장소")
+                    setRobotStatus(robotId, "MOVETOPACKING");
                 }
+
+                {
+                    std::unique_lock<std::mutex> lock(mtx);
+                    cv.wait(lock, [this, robotId] { return getIsEnd(robotId); });
+                }
+
+                sendTask(robotId, "충전소");
+                setRobotStatus(robotId, "MOVETOSTATION");
                 std::cout << "Thread ending for robot " << robotId << std::endl;
             }).detach();
         }
