@@ -24,7 +24,6 @@ setup(
             'rfid_subscriber_node = rfid_reader.rfid_subscriber_node:main',
             'ultrasonic_sensor_node = ultrasonic_sensor.ultrasonic_sensor_node:main',
             'ultrasonic_sensor = ultrasonic_sensor.ultrasonic_sensor:main',
-            'test_sensor = ultrasonic_sensor.test_sensor:main',
         ],
     },
 )
