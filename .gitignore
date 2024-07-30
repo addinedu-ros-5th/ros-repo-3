@@ -171,3 +171,4 @@ cython_debug/
 *.qmake.cache
 
 *.ini
+database.yaml
