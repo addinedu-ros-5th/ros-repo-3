@@ -29,7 +29,7 @@ from nav2_common.launch import RewrittenYaml
 
 def generate_launch_description():
     # Get the launch directory
-    bringup_dir = get_package_share_directory('minibot_navigation2')
+    bringup_dir = get_package_share_directory('outbound_delivery_robot_navigation2')
     launch_dir = os.path.join(bringup_dir, 'launch')
 
     # Create the launch configuration variables
