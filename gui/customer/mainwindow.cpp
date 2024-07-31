@@ -16,14 +16,26 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->plusBtn_2, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->plusBtn_3, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->plusBtn_4, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->plusBtn_5, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->plusBtn_6, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->plusBtn_7, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->plusBtn_8, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->minusBtn, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->minusBtn_2, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->minusBtn_3, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->minusBtn_4, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->minusBtn_5, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->minusBtn_6, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->minusBtn_7, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->minusBtn_8, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->addBtn, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->addBtn_2, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->addBtn_3, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->addBtn_4, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->addBtn_5, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->addBtn_6, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->addBtn_7, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
+    connect(ui->addBtn_8, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->clearBtn, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
     connect(ui->buyBtn, &QPushButton::clicked, this, &MainWindow::onButtonClicked);
 }
@@ -68,6 +80,22 @@ void MainWindow::onButtonClicked()
     {
         plusQuantity(*ui->goodsCount_4);
     }
+    else if (clickedButton == ui->plusBtn_5)
+    {
+        plusQuantity(*ui->goodsCount_5);
+    }
+    else if (clickedButton == ui->plusBtn_6)
+    {
+        plusQuantity(*ui->goodsCount_6);
+    }
+    else if (clickedButton == ui->plusBtn_7)
+    {
+        plusQuantity(*ui->goodsCount_7);
+    }
+    else if (clickedButton == ui->plusBtn_8)
+    {
+        plusQuantity(*ui->goodsCount_8);
+    }
     else if (clickedButton == ui->minusBtn)
     {
         minusQuantity(*ui->goodsCount);
@@ -83,6 +111,22 @@ void MainWindow::onButtonClicked()
     else if (clickedButton == ui->minusBtn_4)
     {
         minusQuantity(*ui->goodsCount_4);
+    }
+    else if (clickedButton == ui->minusBtn_5)
+    {
+        minusQuantity(*ui->goodsCount_5);
+    }
+    else if (clickedButton == ui->minusBtn_6)
+    {
+        minusQuantity(*ui->goodsCount_6);
+    }
+    else if (clickedButton == ui->minusBtn_7)
+    {
+        minusQuantity(*ui->goodsCount_7);
+    }
+    else if (clickedButton == ui->minusBtn_8)
+    {
+        minusQuantity(*ui->goodsCount_8);
     }
     else if (clickedButton == ui->addBtn)
     {
@@ -107,6 +151,30 @@ void MainWindow::onButtonClicked()
         auto itemWidget = QSharedPointer<QWidget>(addItem(*ui->goodsImage_4, *ui->goodsName_4, *ui->goodsCount_4, *ui->goodsPrice_4));
         ui->cartVBoxLayout->addWidget(itemWidget.data(), 0, Qt::Alignment(Qt::AlignTop));
         cartItems.insert(ui->goodsName_4->text(), itemWidget);
+    }
+    else if (clickedButton == ui->addBtn_5)
+    {
+        auto itemWidget = QSharedPointer<QWidget>(addItem(*ui->goodsImage_5, *ui->goodsName_5, *ui->goodsCount_5, *ui->goodsPrice_5));
+        ui->cartVBoxLayout->addWidget(itemWidget.data(), 0, Qt::Alignment(Qt::AlignTop));
+        cartItems.insert(ui->goodsName_5->text(), itemWidget);
+    }
+    else if (clickedButton == ui->addBtn_6)
+    {
+        auto itemWidget = QSharedPointer<QWidget>(addItem(*ui->goodsImage_6, *ui->goodsName_6, *ui->goodsCount_6, *ui->goodsPrice_6));
+        ui->cartVBoxLayout->addWidget(itemWidget.data(), 0, Qt::Alignment(Qt::AlignTop));
+        cartItems.insert(ui->goodsName_6->text(), itemWidget);
+    }
+    else if (clickedButton == ui->addBtn_7)
+    {
+        auto itemWidget = QSharedPointer<QWidget>(addItem(*ui->goodsImage_7, *ui->goodsName_7, *ui->goodsCount_7, *ui->goodsPrice_7));
+        ui->cartVBoxLayout->addWidget(itemWidget.data(), 0, Qt::Alignment(Qt::AlignTop));
+        cartItems.insert(ui->goodsName_7->text(), itemWidget);
+    }
+    else if (clickedButton == ui->addBtn_8)
+    {
+        auto itemWidget = QSharedPointer<QWidget>(addItem(*ui->goodsImage_8, *ui->goodsName_8, *ui->goodsCount_8, *ui->goodsPrice_8));
+        ui->cartVBoxLayout->addWidget(itemWidget.data(), 0, Qt::Alignment(Qt::AlignTop));
+        cartItems.insert(ui->goodsName_8->text(), itemWidget);
     }
     else if (clickedButton == ui->buyBtn)
     {
