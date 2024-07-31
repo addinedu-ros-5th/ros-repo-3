@@ -1,8 +1,8 @@
 import os
 import sys
 import requests
-from datetime import datetime
-import mysql.connector
+import psutil
+import socket
 
 from PyQt5 import uic
 from PyQt5.QtGui import *
@@ -27,6 +27,15 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
 
         self.order_details = []
         self.current_detail_index = 0
+        
+    def get_local_ip(self):
+        interfaces = psutil.net_if_addrs()
+        for interface, addrs in interfaces.items():
+            if 'wlo1' in interface.lower():
+                for addr in addrs:
+                    if addr.family == socket.AF_INET:
+                        return addr.address
+        return None
 
     def ui_init(self):
         self.setupUi(self)
@@ -40,6 +49,7 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
 
         self.date_edit.setCalendarPopup(True)
         self.date_edit.setDisplayFormat("yyyy-MM-dd")
+        self.date_edit.setDate(QDate.currentDate())
         self.date_edit.dateChanged.connect(self.update_data)
 
         self.detail_page = QWidget()
@@ -60,7 +70,8 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.timer.start(2000)
 
     def check_new_data(self, selected_date):
-        url = f""
+        address = self.get_local_ip()
+        url = f"http://{address}:5000/database/order?date={selected_date}"
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
@@ -76,8 +87,8 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
 
         new_widgets = {}
         for item in data:
-            order_id = item['order_id']
-            order_time = item['order_time']
+            order_id = item["order_id"]
+            order_time = item["order_time"]
             current_orders.add(order_id)
 
             if order_id in self.widgets:
@@ -109,21 +120,21 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.widgets.update(new_widgets)
 
     def show_order_details(self, order_id):
-        url = ""
-        params = {'order_id': order_id}
-        response = requests.get(url, params=params)
+        address = self.get_local_ip()
+        url = f"http://{address}:5000/database/order_detail?order_id={order_id}"
+        response = requests.get(url)
         response.raise_for_status()
         self.order_details = response.json()
         self.current_detail_index = 0
-        self.show_next_detail()
+        self.show_next_detail(order_id)
 
-    def show_next_detail(self):
+    def show_next_detail(self, order_id):
         if self.current_detail_index < len(self.order_details):
             detail = self.order_details[self.current_detail_index]
-            product_name = detail['product_name']
-            quantity = str(detail['quantity'])
+            product_name = detail["product_name"]
+            quantity = str(detail["quantity"])
 
-            image_path = self.get_image_path_from_db(product_name)
+            image_path = path() + "/"  + self.get_image_path(product_name)
             pixmap = QPixmap(image_path) if image_path and os.path.exists(image_path) else QPixmap()
 
             for i in reversed(range(self.detail_form_layout.count())):
@@ -137,6 +148,9 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             quantity_label = QLabel(f"수량: {quantity}")
             product_label.setFont(self.font)
             quantity_label.setFont(self.font)
+            
+            self.assign_btn = QPushButton("배정")
+            self.assign_btn.clicked.connect(lambda _, id=order_id: self.assign_robot(id))
 
             image_label = QLabel()
             image_label.setPixmap(pixmap)
@@ -146,6 +160,7 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             self.detail_form_layout.addRow(product_label)
             self.detail_form_layout.addRow(quantity_label)
             self.detail_form_layout.addRow(image_label)
+            self.detail_layout.addWidget(self.assign_btn)
 
             if self.current_detail_index < len(self.order_details) - 1:
                 self.next_button.setText("다음 물품")
@@ -158,33 +173,26 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         else:
             self.stackedWidget.setCurrentWidget(self.order_page)
 
-    def get_image_path_from_db(self, product_name):
-        db_config = {
-            'user' : '',
-            'password' : '',
-            'host' : '',
-            'database' : ''
-        }
-
-        try:
-            conn = mysql.connector.connect(**db_config)
-            cursor = conn.cursor(dictionary=True)
-
-            query = "SELECT image_path FROM product_image_path WHERE product_name = %s"
-            cursor.execute(query, (product_name,))
-            result = cursor.fetchone()
-
-            return result['image_path'] if result else None
-        except mysql.connector.Error as err:
-            print(f"Error: {err}")
-            return None
-        finally:
-            if conn.is_connected():
-                cursor.close()
-                conn.close()
+    def get_image_path(self, product_name):
+        address = self.get_local_ip()
+        url = f"http://{address}:5000/database/image"
+        json = {'product': product_name}
+        response = requests.post(url, json=json)
+        response.raise_for_status()
+        self.order_details = response.json()["image_path"]
+        return self.order_details
+        
 
     def show_order_page(self):
         self.stackedWidget.setCurrentWidget(self.order_page)
+        
+    def assign_robot(self, order_id):
+        address = self.get_local_ip()
+        selected_date = self.date_edit.date().toString("yyyyMMdd")
+        url = f"http://{address}:5000/task/manage"
+        json = {'order_id': order_id, 'date': selected_date}
+        response = requests.post(url, json=json)
+        response.raise_for_status()
 
 
 if __name__ == "__main__":
