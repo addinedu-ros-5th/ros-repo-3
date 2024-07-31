@@ -81,7 +81,7 @@ class TaskPlanner : public DatabaseConnection
 
                 if (process == "arrival")
                 {
-                    setRobotStatus(robotId, "Picking")
+                    setRobotStatus(robotId, "Picking");
                 }
                 else if (process == "finish")
                 {
@@ -103,9 +103,9 @@ class TaskPlanner : public DatabaseConnection
                 if (process == "end")
                 {
                     robotId = getRobotId("Unloading");
-                    for(int index = 0; index < robotId.size(); index++)
+                    for(const auto& id : robotId)
                     {
-                        setIsEnd(robotId[index], true);
+                        setIsEnd(id, true);
                     }
                 }
 
@@ -170,7 +170,7 @@ class TaskPlanner : public DatabaseConnection
         {
             auto conn = Connection();
 
-            std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("UPDATE robot_status SET robot_status = ? WHERE robot_id = ?"));
+            std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("UPDATE robot_info SET robot_status = ? WHERE robot_id = ?"));
             pstmt->setString(1, status);
             pstmt->setInt(2, robotId);
             pstmt->execute();
