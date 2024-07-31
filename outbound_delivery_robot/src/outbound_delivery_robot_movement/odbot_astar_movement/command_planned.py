@@ -6,6 +6,7 @@ from nav_msgs.msg import Path
 from Class.Astar import AStarPlanner
 from outbound_delivery_robot_interfaces.msg import Location
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
+import queue
 
 
 class AStarMovement(Node):
@@ -28,8 +29,15 @@ class AStarMovement(Node):
         
         self.path_publisher = self.create_publisher(Path, 'planned_path', 10)
         self.id_publisher = self.create_publisher(String, 'robot_id', 10)
-        self.pose_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.pose_callback, 10)
+        
+        self.robot_1_pose_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.robot_1_pose_callback, 10)
+        self.robot_2_pose_subscription = self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose_1', self.robot_2_pose_callback, 10)
+        self.robot_3_pose_subscription = self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose_2', self.robot_3_pose_callback, 10)
+        self.robot_4_pose_subscription = self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose_3', self.robot_4_pose_callback, 10)
+        
         self.location_subscription = self.create_subscription(Location, 'location', self.location_callback, 10)
+        
+        
         
         self.add_on_set_parameters_callback(self.parameter_callback)
 
@@ -38,7 +46,23 @@ class AStarMovement(Node):
         self.get_logger().info("Parameter callback triggered")
         return rclpy.node.Node.CallbackReturn.SUCCESS
 
-    def pose_callback(self, msg):
+    
+    def robot_4_pose_callback(self, msg):
+        robot_id = 4
+        self.robot_current_position[robot_id] = (msg.pose.pose.position.x, msg.pose.pose.position.y)
+        self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
+    
+    def robot_3_pose_callback(self, msg):
+        robot_id = 3
+        self.robot_current_position[robot_id] = (msg.pose.pose.position.x, msg.pose.pose.position.y)
+        self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
+    
+    def robot_2_pose_callback(self, msg):
+        robot_id = 2
+        self.robot_current_position[robot_id] = (msg.pose.pose.position.x, msg.pose.pose.position.y)
+        self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
+    
+    def robot_1_pose_callback(self, msg):
         robot_id = 1
         self.robot_current_position[robot_id] = (msg.pose.pose.position.x, msg.pose.pose.position.y)
         self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
@@ -70,7 +94,7 @@ class AStarMovement(Node):
 
         self.get_logger().info(f"Moving to {location.section} from position ({sx_real}, {sy_real}) to ({gx_real}, {gy_real})")
 
-        a_star = AStarPlanner(resolution=1, rr=1, padding=3)
+        a_star = AStarPlanner(resolution=1, rr=0.5, padding=3)
 
         tpx, tpy = a_star.planning(sx_real, sy_real, gx_real, gy_real)
 
@@ -104,3 +128,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
