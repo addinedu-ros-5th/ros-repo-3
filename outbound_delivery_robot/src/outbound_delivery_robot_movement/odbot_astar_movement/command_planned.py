@@ -41,6 +41,9 @@ class AStarMovement(Node):
         
         self.add_on_set_parameters_callback(self.parameter_callback)
 
+        
+        self.queue = queue.Queue()
+        self.processing = False
 
     def parameter_callback(self, params):
         self.get_logger().info("Parameter callback triggered")
@@ -50,28 +53,39 @@ class AStarMovement(Node):
     def robot_4_pose_callback(self, msg):
         robot_id = 4
         self.robot_current_position[robot_id] = (msg.pose.pose.position.x, msg.pose.pose.position.y)
-        self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
+        #self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
     
     def robot_3_pose_callback(self, msg):
         robot_id = 3
         self.robot_current_position[robot_id] = (msg.pose.pose.position.x, msg.pose.pose.position.y)
-        self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
+        #self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
     
     def robot_2_pose_callback(self, msg):
         robot_id = 2
         self.robot_current_position[robot_id] = (msg.pose.pose.position.x, msg.pose.pose.position.y)
-        self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
+        #self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
     
     def robot_1_pose_callback(self, msg):
         robot_id = 1
         self.robot_current_position[robot_id] = (msg.pose.pose.position.x, msg.pose.pose.position.y)
-        self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
+        #self.get_logger().info(f"Updated AMCL_position for robot {robot_id}: {self.robot_current_position[robot_id]}")
 
     def location_callback(self, msg):
 
         self.get_logger().info(f"Location callback triggered")
         self.get_logger().info(f"Received location: robot ID = {msg.robot_id}, section={msg.section}, x={msg.x}, y={msg.y}, z={msg.z}, w={msg.w}")
-        self.move_to_target(msg)
+        self.queue.put(msg)
+        if not self.processing:
+            self.process_next_location()
+            
+    def process_next_location(self):
+        if not self.queue.empty():
+            self.processing = True
+            location = self.queue.get()
+            self.move_to_target(location)
+            
+        else:
+            self.processing = False
 
     def move_to_target(self, location):
         
@@ -94,7 +108,7 @@ class AStarMovement(Node):
 
         self.get_logger().info(f"Moving to {location.section} from position ({sx_real}, {sy_real}) to ({gx_real}, {gy_real})")
 
-        a_star = AStarPlanner(resolution=1, rr=0.5, padding=3)
+        a_star = AStarPlanner(resolution=1, rr=0.5, padding=2)
 
         tpx, tpy = a_star.planning(sx_real, sy_real, gx_real, gy_real)
 
@@ -118,6 +132,9 @@ class AStarMovement(Node):
         id_msg.data = str(location.robot_id)
         self.id_publisher.publish(id_msg)
         self.get_logger().info(f'Robot ID {location.robot_id} published')
+        
+        self.processing = False
+        self.process_next_location()
 
 def main(args=None):
     rclpy.init(args=args)
