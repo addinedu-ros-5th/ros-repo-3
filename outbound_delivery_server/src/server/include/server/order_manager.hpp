@@ -36,7 +36,7 @@ class OrderManager : public DatabaseConnection
                 res->next();
                 int64_t orderId = res->getInt64(1);
 
-                std::unique_ptr<sql::PreparedStatement> pstmt_details(conn->prepareStatement("INSERT INTO order_details (order_id, product_name, quantity, price) VALUES (?, ?, ?, ?)"));
+                std::unique_ptr<sql::PreparedStatement> pstmt_details(conn->prepareStatement("INSERT INTO order_details (order_id, product_name, order_time, quantity, price) VALUES (?, ?, ?, ?, ?)"));
                 for (const auto& item : items)
                 {
                     std::string productName = item["productName"].s();
@@ -45,8 +45,9 @@ class OrderManager : public DatabaseConnection
 
                     pstmt_details->setInt64(1, orderId);
                     pstmt_details->setString(2, productName);
-                    pstmt_details->setInt(3, quantity);
-                    pstmt_details->setDouble(4, price);
+                    pstmt_details->setString(3, orderTime);
+                    pstmt_details->setInt(4, quantity);
+                    pstmt_details->setDouble(5, price);
                     pstmt_details->execute();
                 }
 
@@ -84,10 +85,11 @@ class OrderManager : public DatabaseConnection
             {
                 auto data = req.url_params.get("order_id");
                 if (!data) { return crow::response(400, "Invalid param"); }
+
                 auto conn = Connection();
 
                 std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT d.product_name, d.quantity FROM orders o JOIN order_details d ON o.order_id = d.order_id WHERE o.order_id = ? ORDER BY o.order_time"));
-                pstmt->setString(1, data);
+                pstmt->setString(1, std::string(data));
 
                 std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
                 json orderDetails = json::array();
@@ -100,6 +102,26 @@ class OrderManager : public DatabaseConnection
                 }
 
                 return crow::response(orderDetails.dump());
+            });
+
+            CROW_BP_ROUTE(bp, "/image").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
+            {
+                auto data = crow::json::load(req.body);
+                if (!data) { return crow::response(400, "Invalid param"); }
+                auto conn = Connection();
+
+                auto product = data["product"];
+
+                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT image_path FROM product_image_path WHERE product_name = ?"));
+                pstmt->setString(1, std::string(product));
+
+                std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+                res->next();
+
+                json imageInfo;
+                imageInfo["image_path"] = res->getString("image_path");
+
+                return crow::response(imageInfo.dump());
             });
         }
 
