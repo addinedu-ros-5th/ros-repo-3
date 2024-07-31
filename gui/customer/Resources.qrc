@@ -14,5 +14,9 @@
         <file>Image/banana.png</file>
         <file>Image/grape.png</file>
         <file>Image/orange.png</file>
+        <file>Image/peach.png</file>
+        <file>Image/pear.png</file>
+        <file>Image/strawberry.png</file>
+        <file>Image/apple.png</file>
     </qresource>
 </RCC>
