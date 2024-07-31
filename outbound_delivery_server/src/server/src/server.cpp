@@ -9,6 +9,7 @@
 #include "server/led_control.hpp"
 #include "server/camera_detection.hpp"
 #include "server/task_planner.hpp"
+#include "server/gui_communication.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -22,6 +23,7 @@ int main(int argc, char* argv[])
     LedControl ledControl;
     CameraDetection cameraDetection;
     TaskPlanner taskPlanner(configFile);
+    GuiCommunication guiCommunication(configFile);
 
     crow::SimpleApp app;
 
@@ -30,6 +32,7 @@ int main(int argc, char* argv[])
     app.register_blueprint(ledControl.getBlueprint());
     app.register_blueprint(cameraDetection.getBlueprint());
     app.register_blueprint(taskPlanner.getBlueprint());
+    app.register_blueprint(guiCommunication.getBlueprint());
 
     app.port(5000).multithreaded().run();
 
