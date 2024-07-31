@@ -52,45 +52,63 @@ class AmclSubscriber(Node):
         super().__init__('amcl_subscriber')
 
         amcl_pose_qos = QoSProfile(
-            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            durability=QoSDurabilityPolicy.VOLATILE,
             reliability=QoSReliabilityPolicy.RELIABLE,
             history=QoSHistoryPolicy.KEEP_LAST,
-            depth=1
+            depth=10
         )
 
-        self.subscribers = {
-            'robot1': self.create_subscription(
-                PoseWithCovarianceStamped,
-                '/amcl_pose_1',
-                self.amcl_callback_factory('robot1'),
-                amcl_pose_qos
-            ),
-            'robot2': self.create_subscription(
-                PoseWithCovarianceStamped,
-                '/amcl_pose_2',
-                self.amcl_callback_factory('robot2'),
-                amcl_pose_qos
-            ),
-            'robot3': self.create_subscription(
-                PoseWithCovarianceStamped,
-                '/amcl_pose_3',
-                self.amcl_callback_factory('robot3'),
-                amcl_pose_qos
-            ),
-            'robot4': self.create_subscription(
-                PoseWithCovarianceStamped,
-                '/amcl_pose_4',
-                self.amcl_callback_factory('robot4'),
-                amcl_pose_qos
-            )
-        }
+        self.subscriber1 = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose_1',
+            self.amcl_callback_1,
+            amcl_pose_qos
+        )
 
-    def amcl_callback_factory(self, robot_name):
-        def amcl_callback(msg):
-            global robot_positions
-            robot_positions[robot_name][0] = msg.pose.pose.position.x
-            robot_positions[robot_name][1] = msg.pose.pose.position.y
-        return amcl_callback
+        self.subscriber2 = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose_2',
+            self.amcl_callback_2,
+            amcl_pose_qos
+        )
+
+        self.subscriber3 = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose_3',
+            self.amcl_callback_3,
+            amcl_pose_qos
+        )
+
+        self.subscriber4 = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose',
+            self.amcl_callback_4,
+            amcl_pose_qos
+        )
+
+    def amcl_callback_1(self, msg):
+        global robot_positions
+        robot_positions['robot1'][0] = msg.pose.pose.position.x
+        robot_positions['robot1'][1] = msg.pose.pose.position.y
+        print(f"Updated robot1 position to {robot_positions['robot1']}")  # 로그 출력 추가
+
+    def amcl_callback_2(self, msg):
+        global robot_positions
+        robot_positions['robot2'][0] = msg.pose.pose.position.x
+        robot_positions['robot2'][1] = msg.pose.pose.position.y
+        print(f"Updated robot2 position to {robot_positions['robot2']}")  # 로그 출력 추가
+
+    def amcl_callback_3(self, msg):
+        global robot_positions
+        robot_positions['robot3'][0] = msg.pose.pose.position.x
+        robot_positions['robot3'][1] = msg.pose.pose.position.y
+        print(f"Updated robot3 position to {robot_positions['robot3']}")  # 로그 출력 추가
+
+    def amcl_callback_4(self, msg):
+        global robot_positions
+        robot_positions['robot4'][0] = msg.pose.pose.position.x
+        robot_positions['robot4'][1] = msg.pose.pose.position.y
+        print(f"Updated robot4 position to {robot_positions['robot4']}")  # 로그 출력 추가
 
 # 메인 윈도우 클래스 정의
 class WindowClass(QMainWindow, from_class):
@@ -170,9 +188,10 @@ class WindowClass(QMainWindow, from_class):
         self.map_label.setPixmap(updated_pixmap)
 
     def calc_grid_position(self, x, y):
-        pos_x = (x - self.map_origin[0]) / self.map_resolution * self.image_scale
-        pos_y = (y - self.map_origin[1]) / self.map_resolution * self.image_scale
-        return int((self.width - pos_x)), int(pos_y)
+        # 이미지 스케일에 따른 좌표 변환
+        pos_x = (x - self.map_origin[0]) / self.map_resolution
+        pos_y = (y - self.map_origin[1]) / self.map_resolution
+        return int((self.width * self.image_scale - pos_x * self.image_scale)), int(pos_y * self.image_scale)
 
     def closeEvent(self, event):
         rp.shutdown()  # ROS2 종료
