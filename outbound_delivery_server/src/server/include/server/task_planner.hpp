@@ -32,15 +32,26 @@ class TaskPlanner : public DatabaseConnection
             CROW_BP_ROUTE(bp, "/manage").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
             {
                 auto data = crow::json::load(req.body);
-                if (!data) {return crow::response(400, "Invalid JSON"); }
+                if (!data) { return crow::response(400, "Invalid JSON"); }
 
-                auto items = data["items"];
+                std::cout << data << std::endl;
+
+                auto orderId = data["order_id"];
+                auto date = data["date"];
+
+                auto conn = Connection();
+
+                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT d.product_name FROM orders o JOIN order_details d ON o.order_id = d.order_id WHERE o.order_id = ? AND o.order_time = ?"));
+                pstmt->setString(1, std::string(orderId));
+                pstmt->setString(2, std::string(date));
+
+                std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
 
                 std::queue<std::string> tasks;
 
-                for (const auto& item : items)
+                while (res->next())
                 {
-                    tasks.push(std::string(item));
+                    tasks.push(std::string(res->getString("product_name")));
                 }
 
                 std::cout << "Assigned workload: " << tasks.size() << std::endl;
@@ -139,7 +150,7 @@ class TaskPlanner : public DatabaseConnection
         {
             auto conn = Connection();
 
-            std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT * FROM robot_status WHERE robot_status = ? AND robot_battery >= ? ORDER BY robot_battery DESC"));
+            std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT * FROM robot_info WHERE robot_status = ? AND robot_battery >= ? ORDER BY robot_battery DESC"));
             pstmt->setString(1, "CHARGING");
             pstmt->setInt(2, 30);
             
@@ -176,7 +187,7 @@ class TaskPlanner : public DatabaseConnection
             std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
             res->next();
 
-            std::string robotStatus = res->getInt("robot_status");
+            std::string robotStatus = res->getString("robot_status");
             
             return robotStatus;
         }
@@ -228,7 +239,7 @@ class TaskPlanner : public DatabaseConnection
 
                 if (tasks.empty())
                 {
-                    sendTask(robotId, "포장소")
+                    sendTask(robotId, "포장소");
                     setRobotStatus(robotId, "MOVETOPACKING");
                 }
 
