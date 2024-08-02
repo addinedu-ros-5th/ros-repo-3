@@ -38,14 +38,14 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="order_page">
     <widget class="QLabel" name="label_2">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>20</y>
+       <x>35</x>
+       <y>25</y>
        <width>74</width>
        <height>30</height>
       </rect>
@@ -117,7 +117,7 @@
      <property name="geometry">
       <rect>
        <x>80</x>
-       <y>80</y>
+       <y>75</y>
        <width>74</width>
        <height>30</height>
       </rect>
@@ -138,7 +138,7 @@
      <property name="geometry">
       <rect>
        <x>270</x>
-       <y>80</y>
+       <y>75</y>
        <width>74</width>
        <height>30</height>
       </rect>
@@ -159,7 +159,7 @@
      <property name="geometry">
       <rect>
        <x>460</x>
-       <y>80</y>
+       <y>75</y>
        <width>74</width>
        <height>30</height>
       </rect>
@@ -202,10 +202,186 @@
       </date>
      </property>
     </widget>
+    <widget class="QLabel" name="label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>30</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">image: url(:/Image/bag.png);</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
    </widget>
-   <widget class="QWidget" name="order_info"/>
+   <widget class="QWidget" name="order_info">
+    <widget class="QPushButton" name="back_btn">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>30</width>
+       <height>30</height>
+      </rect>
+     </property>
+     <property name="cursor">
+      <cursorShape>PointingHandCursor</cursorShape>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">image: url(:/Image/arrow.png);
+border: None;</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_7">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>50</y>
+       <width>120</width>
+       <height>30</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>15</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>주문상세정보</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_6">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>55</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">image: url(:/Image/bag.png);</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QScrollArea" name="scrollArea_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>90</y>
+       <width>600</width>
+       <height>771</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>600</width>
+       <height>771</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>600</width>
+       <height>771</height>
+      </size>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>598</width>
+        <height>769</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0">
+        <layout class="QVBoxLayout" name="order_detail_layout"/>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+    <widget class="QPushButton" name="assign_btn">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>880</y>
+       <width>291</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>291</width>
+       <height>51</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>291</width>
+       <height>51</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>로봇 배정</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="end_btn">
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>880</y>
+       <width>291</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>291</width>
+       <height>51</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>291</width>
+       <height>51</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>완료</string>
+     </property>
+    </widget>
+   </widget>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

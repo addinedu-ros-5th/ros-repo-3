@@ -9,6 +9,9 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
+from functools import partial
+
+
 def path():
     current_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_path)
@@ -24,9 +27,6 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.ui_init()
         self.pulling()
         self.update_data()
-
-        self.order_details = []
-        self.current_detail_index = 0
         
     def get_local_ip(self):
         interfaces = psutil.net_if_addrs()
@@ -42,27 +42,26 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.setWindowTitle("OD Worker")
         self.stackedWidget.setCurrentWidget(self.order_page)
         self.orders_displayed = set()
+        self.order_details_displayed = set()
 
         self.font = QFont()
         self.font.setPointSize(20)
         self.widgets = {}
+        self.detail_widgets = {}
 
         self.date_edit.setCalendarPopup(True)
         self.date_edit.setDisplayFormat("yyyy-MM-dd")
         self.date_edit.setDate(QDate.currentDate())
         self.date_edit.dateChanged.connect(self.update_data)
+        
+        self.back_btn.clicked.connect(self.back)
 
-        self.detail_page = QWidget()
-        self.detail_layout = QVBoxLayout(self.detail_page)
-
-        self.detail_form_layout = QFormLayout()
-        self.detail_layout.addLayout(self.detail_form_layout)
-
-        self.next_button = QPushButton("다음 물품")
-        self.next_button.clicked.connect(self.show_next_detail)
-        self.detail_layout.addWidget(self.next_button)
-
-        self.stackedWidget.addWidget(self.detail_page)
+        
+    def back(self):
+        self.stackedWidget.setCurrentWidget(self.order_page)
+        
+    def end(self):
+        pass
 
     def pulling(self):
         self.timer = QTimer(self)
@@ -84,8 +83,8 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
 
     def display_orders(self, data):
         current_orders = set()
-
         new_widgets = {}
+        
         for item in data:
             order_id = item["order_id"]
             order_time = item["order_time"]
@@ -96,16 +95,21 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
 
             order_widget = QWidget()
             order_layout = QHBoxLayout(order_widget)
+
             order_id_label = QLabel(str(order_id))
             order_id_label.setFont(self.font)
             order_id_label.setAlignment(Qt.AlignCenter)
+
             order_time_label = QLabel(order_time)
             order_time_label.setAlignment(Qt.AlignCenter)
+
             order_button = QPushButton("확인")
-            order_button.clicked.connect(lambda _, id=order_id: self.show_order_details(id))
+            order_button.clicked.connect(partial(self.get_order_details, order_id))
+
             order_layout.addWidget(order_id_label)
             order_layout.addWidget(order_time_label)
             order_layout.addWidget(order_button)
+
             self.order_list_layout.addWidget(order_widget)
             new_widgets[order_id] = order_widget
 
@@ -119,59 +123,57 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.orders_displayed = current_orders
         self.widgets.update(new_widgets)
 
-    def show_order_details(self, order_id):
+    def get_order_details(self, order_id):
         address = self.get_local_ip()
         url = f"http://{address}:5000/database/order_detail?order_id={order_id}"
         response = requests.get(url)
         response.raise_for_status()
-        self.order_details = response.json()
-        self.current_detail_index = 0
-        self.show_next_detail(order_id)
+        order_details = response.json()
+        self.stackedWidget.setCurrentWidget(self.order_info)
+        self.show_order_details(order_details, order_id)
 
-    def show_next_detail(self, order_id):
-        if self.current_detail_index < len(self.order_details):
-            detail = self.order_details[self.current_detail_index]
-            product_name = detail["product_name"]
-            quantity = str(detail["quantity"])
+    def show_order_details(self, order_details, order_id):
+        
+        self.assign_btn.clicked.connect(lambda: self.assign_robot(order_id))
+        self.end_btn.clicked.connect(self.end)
+        for i in reversed(range(self.order_detail_layout.count())):
+            widget = self.order_detail_layout.itemAt(i).widget()
+            if widget is not None:
+                widget.deleteLater()
 
-            image_path = path() + "/"  + self.get_image_path(product_name)
+        self.detail_widgets.clear()
+
+        new_widgets = {}
+        for order_detail in order_details:
+            product_name = order_detail["product_name"]
+            quantity = str(order_detail["quantity"])
+
+            image_path = path() + "/" + self.get_image_path(product_name)
             pixmap = QPixmap(image_path) if image_path and os.path.exists(image_path) else QPixmap()
 
-            for i in reversed(range(self.detail_form_layout.count())):
-                item = self.detail_form_layout.itemAt(i)
-                if item:
-                    widget = item.widget()
-                    if widget:
-                        widget.deleteLater()
+            order_detail_widget = QWidget()
+            order_detail_layout = QHBoxLayout(order_detail_widget)
 
-            product_label = QLabel(f"물품: {product_name}")
-            quantity_label = QLabel(f"수량: {quantity}")
-            product_label.setFont(self.font)
-            quantity_label.setFont(self.font)
-            
-            self.assign_btn = QPushButton("배정")
-            self.assign_btn.clicked.connect(lambda _, id=order_id: self.assign_robot(id))
+            product_name_label = QLabel(product_name)
+            product_name_label.setFont(self.font)
+            product_name_label.setAlignment(Qt.AlignCenter)
+
+            quantity_label = QLabel(quantity)
+            quantity_label.setAlignment(Qt.AlignCenter)
 
             image_label = QLabel()
             image_label.setPixmap(pixmap)
             image_label.setScaledContents(True)
-            image_label.setFixedSize(300, 300)
+            image_label.setFixedSize(100, 100)
 
-            self.detail_form_layout.addRow(product_label)
-            self.detail_form_layout.addRow(quantity_label)
-            self.detail_form_layout.addRow(image_label)
-            self.detail_layout.addWidget(self.assign_btn)
+            order_detail_layout.addWidget(image_label)
+            order_detail_layout.addWidget(product_name_label)
+            order_detail_layout.addWidget(quantity_label)
 
-            if self.current_detail_index < len(self.order_details) - 1:
-                self.next_button.setText("다음 물품")
-            else:
-                self.next_button.setText("담기 완료")
+            self.order_detail_layout.addWidget(order_detail_widget)
+            new_widgets[order_id] = order_detail_widget
 
-
-            self.stackedWidget.setCurrentWidget(self.detail_page)
-            self.current_detail_index += 1
-        else:
-            self.stackedWidget.setCurrentWidget(self.order_page)
+        self.detail_widgets = new_widgets
 
     def get_image_path(self, product_name):
         address = self.get_local_ip()
@@ -181,10 +183,6 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         response.raise_for_status()
         self.order_details = response.json()["image_path"]
         return self.order_details
-        
-
-    def show_order_page(self):
-        self.stackedWidget.setCurrentWidget(self.order_page)
         
     def assign_robot(self, order_id):
         address = self.get_local_ip()
