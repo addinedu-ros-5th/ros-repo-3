@@ -17,9 +17,9 @@
    <property name="geometry">
     <rect>
      <x>820</x>
-     <y>500</y>
+     <y>530</y>
      <width>421</width>
-     <height>191</height>
+     <height>161</height>
     </rect>
    </property>
    <property name="title">
@@ -31,7 +31,7 @@
       <x>10</x>
       <y>30</y>
       <width>401</width>
-      <height>151</height>
+      <height>121</height>
      </rect>
     </property>
     <row>
@@ -47,11 +47,6 @@
     <row>
      <property name="text">
       <string>od_robot3</string>
-     </property>
-    </row>
-    <row>
-     <property name="text">
-      <string>od_robot4</string>
      </property>
     </row>
     <column>
@@ -75,7 +70,7 @@
    <property name="geometry">
     <rect>
      <x>820</x>
-     <y>10</y>
+     <y>30</y>
      <width>421</width>
      <height>481</height>
     </rect>
@@ -123,18 +118,13 @@
       <string>od_robot3</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="cam_btn4">
-     <property name="text">
-      <string>od_robot4</string>
-     </property>
-    </widget>
    </widget>
   </widget>
   <widget class="QGroupBox" name="Map_groupBox1">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>10</y>
+     <y>30</y>
      <width>781</width>
      <height>481</height>
     </rect>
@@ -322,9 +312,9 @@
    <property name="geometry">
     <rect>
      <x>380</x>
-     <y>500</y>
+     <y>530</y>
      <width>421</width>
-     <height>191</height>
+     <height>161</height>
     </rect>
    </property>
    <property name="title">
@@ -336,7 +326,7 @@
       <x>15</x>
       <y>30</y>
       <width>391</width>
-      <height>151</height>
+      <height>121</height>
      </rect>
     </property>
     <column>

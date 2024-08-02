@@ -18,5 +18,6 @@
         <file>Image/pear.png</file>
         <file>Image/strawberry.png</file>
         <file>Image/apple.png</file>
+        <file>Image/odc.png</file>
     </qresource>
 </RCC>
