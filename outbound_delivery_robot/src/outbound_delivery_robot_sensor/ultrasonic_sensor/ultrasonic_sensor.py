@@ -1,49 +1,56 @@
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Float32
 import RPi.GPIO as GPIO
 import time
 
-# GPIO 모드 설정 (BCM)
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)  # GPIO 경고 메시지 비활성화
+class UltraSensor(Node):
+    def __init__(self):
+        super().__init__('ultrasensor_node')
+        self.publisher_ = self.create_publisher(Float32, 'ultra', 10)
+        
+        self.trig_pin = 23
+        self.echo_pin = 24
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.trig_pin, GPIO.OUT)
+        GPIO.setup(self.echo_pin, GPIO.IN)
+        
+        self.timer = self.create_timer(1.0, self.timer_callback)
 
-# GPIO 핀 할당
-GPIO_TRIGGER = 23
-GPIO_ECHO = 24
+    def timer_callback(self):
+        distance = self.get_distance()
+        if 15.0 <= distance <= 20.0:
+            msg = Float32()
+            msg.data = distance
+            self.publisher_.publish(msg)
+            self.get_logger().info(f'Published Distance: {distance} cm')
 
-# GPIO 핀 방향 설정 (IN / OUT)
-GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
-GPIO.setup(GPIO_ECHO, GPIO.IN)
+    def get_distance(self):
+        GPIO.output(self.trig_pin, GPIO.LOW)
+        time.sleep(0.1)
+        GPIO.output(self.trig_pin, GPIO.HIGH)
+        time.sleep(0.00001)
+        GPIO.output(self.trig_pin, GPIO.LOW)
 
-def measure_distance():
-    # 트리거 핀을 HIGH로 설정
-    GPIO.output(GPIO_TRIGGER, True)
-    # 0.01ms 후 트리거 핀을 LOW로 설정
-    time.sleep(0.00001)
-    GPIO.output(GPIO_TRIGGER, False)
+        while GPIO.input(self.echo_pin) == 0:
+            pulse_start = time.time()
 
-    startTime = time.time()
-    arrivalTime = time.time()
+        while GPIO.input(self.echo_pin) == 1:
+            pulse_end = time.time()
 
-    # 에코 핀이 LOW에서 HIGH로 변할 때까지 대기
-    while GPIO.input(GPIO_ECHO) == 0:
-        startTime = time.time()
+        pulse_duration = pulse_end - pulse_start
+        distance = pulse_duration * 17150
+        distance = round(distance, 2)
 
-    # 에코 핀이 HIGH에서 LOW로 변할 때까지 대기
-    while GPIO.input(GPIO_ECHO) == 1:
-        arrivalTime = time.time()
+        self.get_logger().info(f'Measured Distance: {distance} cm')
+        return distance
 
-    # 시간을 계산하여 거리 측정
-    timeElapsed = arrivalTime - startTime
-    distance = (timeElapsed * 34300) / 2
-
-    return distance
+def main(args=None):
+    rclpy.init(args=args)
+    ultrasensor = UltraSensor()
+    rclpy.spin(ultrasensor)
+    ultrasensor.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
-    try:
-        while True:
-            dist = measure_distance()
-            print("Measured distance = %.1f cm" % dist)
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        print("Measurement stopped by user")
-        GPIO.cleanup()
+    main()
