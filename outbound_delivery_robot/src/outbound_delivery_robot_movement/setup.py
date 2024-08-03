@@ -20,8 +20,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-        'astar_movement = outbound_delivery_robot_movement.astar_movement:main',
-        'command_publisher = outbound_delivery_robot_movement.command_publisher:main',
         'command_planned = outbound_delivery_robot_movement.command_planned:main',
         'command_path = outbound_delivery_robot_movement.command_path:main',
         ],
