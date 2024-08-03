@@ -4,4 +4,3 @@
     <arg name="config" value="$(find-pkg-share odbot_astar_movement))/config/movement_bridge.yaml" />
   </include>
 </launch>
-
