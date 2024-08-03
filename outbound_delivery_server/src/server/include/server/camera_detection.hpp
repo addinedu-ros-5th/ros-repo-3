@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/int32.hpp"
 
 using json = nlohmann::json;
 
@@ -16,7 +16,7 @@ class CameraDetection : public rclcpp::Node
     public:
         CameraDetection() : Node("camera_detection") ,bp("camera")
         {
-            publisher_ = this->create_publisher<std_msgs::msg::String>("detection", 10);
+            publisher_ = this->create_publisher<std_msgs::msg::Int32>("detection", 10);
 
             CROW_BP_ROUTE(bp, "/detection").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
             {
@@ -27,26 +27,18 @@ class CameraDetection : public rclcpp::Node
                 auto robotDetection = data["robots"];
                 auto personDetection = data["persons"];
 
-                if (boxDetection == 1)
+                if (boxDetection == 1 || robotDetection == 1 || personDetection == 1)
                 {
-                    detection_msg.data = "box";
+                    detection_msg.data = 1;
                     publisher_->publish(detection_msg);
                 }
-
-                if (robotDetection == 1)
+                else
                 {
-                    detection_msg.data = "robot";
-                    publisher_->publish(detection_msg);
-                }
-
-                if (personDetection == 1)
-                {
-                    detection_msg.data = "person";
+                    detection_msg.data = 0;
                     publisher_->publish(detection_msg);
                 }
 
                 return crow::response(200, "Detection published successfully");
-
             });
         }
 
@@ -57,6 +49,6 @@ class CameraDetection : public rclcpp::Node
 
     private:
         crow::Blueprint bp;
-        rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
-        std_msgs::msg::String detection_msg;
+        rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr publisher_;
+        std_msgs::msg::Int32 detection_msg;
 };
