@@ -1,7 +1,59 @@
-topics:
-  - topic_name: /astar_commands  
-    from_domain: 77              
-    to_domain: 63                
-    type_name: std_msgs/msg/String 
+name: movement
 
-services: []
+topics:
+  planned_path_1:
+    type: nav_msgs/msg/Path
+    to_domain: 99
+    from_domain: 77
+    remap: planned_path_1
+  planned_path_2:
+    type: nav_msgs/msg/Path
+    to_domain: 63
+    from_domain: 77
+    remap: planned_path_2
+  planned_path_3:
+    type: nav_msgs/msg/Path
+    to_domain: 59
+    from_domain: 77
+    remap: planned_path_3
+  robot_id:  
+    type: std_msgs/msg/String
+    to_domain: 99
+    from_domain: 77
+    remap: robot_id
+  robot_id:  
+    type: std_msgs/msg/String
+    to_domain: 63
+    from_domain: 77
+    remap: robot_id
+  robot_id:  
+    type: std_msgs/msg/String
+    to_domain: 59
+    from_domain: 77
+    remap: robot_id
+  amcl_pose:  
+    type: geometry_msgs/msg/PoseWithCovarianceStamped
+    to_domain: 77
+    from_domain: 99
+    remap: amcl_pose
+  amcl_pose:  
+    type: geometry_msgs/msg/PoseWithCovarianceStamped
+    to_domain: 77
+    from_domain: 63
+    remap: amcl_pose_1
+  amcl_pose:  
+    type: geometry_msgs/msg/PoseWithCovarianceStamped
+    to_domain: 77
+    from_domain: 59
+    remap: amcl_pose_2
+  location:
+    type: outbound_delivery_robot_interfaces/msg/Location
+    to_domain: 77
+    from_domain: 41
+    remap: location
+  destination:
+    type: std_msgs/msg/int32
+    to_domain: 59
+    from_domain: 41
+    remap: detection
+
