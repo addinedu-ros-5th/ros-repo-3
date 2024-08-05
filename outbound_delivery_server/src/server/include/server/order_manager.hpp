@@ -27,7 +27,7 @@ class OrderManager : public DatabaseConnection
 
                 auto conn = Connection();
 
-                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("INSERT INTO orders (order_time) VALUE(?)"));
+                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("INSERT INTO order_info (order_time) VALUE(?)"));
                 pstmt->setString(1, orderTime);
                 pstmt->execute();
                 
@@ -63,7 +63,7 @@ class OrderManager : public DatabaseConnection
 
                 auto conn = Connection();
 
-                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT order_id, order_time FROM orders WHERE order_time = ? ORDER BY order_id"));
+                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT order_id, order_time FROM order_info WHERE order_time = ? ORDER BY order_id"));
                 pstmt->setString(1, data);
                 
                 std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
@@ -88,7 +88,7 @@ class OrderManager : public DatabaseConnection
 
                 auto conn = Connection();
 
-                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT d.product_name, d.quantity FROM orders o JOIN order_details d ON o.order_id = d.order_id WHERE o.order_id = ? ORDER BY o.order_time"));
+                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT d.product_name, d.quantity FROM order_info o JOIN order_details d ON o.order_id = d.order_id WHERE o.order_id = ? ORDER BY o.order_time"));
                 pstmt->setString(1, std::string(data));
 
                 std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());

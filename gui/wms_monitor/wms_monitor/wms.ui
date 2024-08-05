@@ -145,7 +145,7 @@
      <string/>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEdit1">
+   <widget class="QLineEdit" name="lineEdit_1">
     <property name="geometry">
      <rect>
       <x>330</x>
@@ -154,11 +154,21 @@
       <height>25</height>
      </rect>
     </property>
+    <property name="styleSheet">
+     <string notr="true">QLineEdit {
+    background: transparent;
+    border: 1px solid black;
+}
+</string>
+    </property>
     <property name="text">
      <string>충전소</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
+    </property>
+    <property name="clearButtonEnabled">
+     <bool>false</bool>
     </property>
    </widget>
    <widget class="QLabel" name="label_1">
@@ -299,6 +309,13 @@
       <width>51</width>
       <height>171</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLineEdit {
+    background: transparent;
+    border: 1px solid black;
+}
+</string>
     </property>
     <property name="text">
      <string>포장소</string>

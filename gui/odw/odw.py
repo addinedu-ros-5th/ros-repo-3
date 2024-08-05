@@ -55,13 +55,15 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.date_edit.dateChanged.connect(self.update_data)
         
         self.back_btn.clicked.connect(self.back)
-
         
     def back(self):
         self.stackedWidget.setCurrentWidget(self.order_page)
         
     def end(self):
-        pass
+        address = self.get_local_ip()
+        url = f"http://{address}:5000/task/process"
+        json = {"robot_id": self.id, "process": "finish"}
+        requests.post(url, json=json)
 
     def pulling(self):
         self.timer = QTimer(self)
@@ -71,10 +73,15 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
     def check_new_data(self, selected_date):
         address = self.get_local_ip()
         url = f"http://{address}:5000/database/order?date={selected_date}"
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        return data
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+            self.server_status.setText("서버 연결 성공")
+            return data
+        except requests.exceptions.RequestException as e:
+            self.server_status.setText("서버 연결 실패, 연결 대기 중...")
+            return []
     
     def update_data(self):
         selected_date = self.date_edit.date().toString("yyyyMMdd")
@@ -191,6 +198,12 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         json = {'order_id': order_id, 'date': selected_date}
         response = requests.post(url, json=json)
         response.raise_for_status()
+        data = response.json()
+        self.id = data["robot_id"]
+        if self.id == -1:
+            QMessageBox.warning(self, "Robot", "All robot is assigned!!")
+        else:
+            self.robot_id.setText(str(self.id))
 
 
 if __name__ == "__main__":
