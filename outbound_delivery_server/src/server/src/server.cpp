@@ -10,6 +10,7 @@
 #include "server/camera_detection.hpp"
 #include "server/task_planner.hpp"
 #include "server/gui_communication.hpp"
+#include "server/tag_reader.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -24,8 +25,10 @@ int main(int argc, char* argv[])
     CameraDetection cameraDetection;
     TaskPlanner taskPlanner(configFile);
     GuiCommunication guiCommunication(configFile);
+    Outbound outbound(configFile);
 
     crow::SimpleApp app;
+    app.loglevel(crow::LogLevel::Info);
 
     app.register_blueprint(orderManager.getBlueprint());
     app.register_blueprint(destination.getBlueprint());
@@ -33,6 +36,7 @@ int main(int argc, char* argv[])
     app.register_blueprint(cameraDetection.getBlueprint());
     app.register_blueprint(taskPlanner.getBlueprint());
     app.register_blueprint(guiCommunication.getBlueprint());
+    app.register_blueprint(outbound.getBlueprint());
 
     app.port(5000).multithreaded().run();
 
