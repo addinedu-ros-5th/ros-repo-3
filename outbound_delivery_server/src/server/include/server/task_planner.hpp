@@ -41,7 +41,7 @@ class TaskPlanner : public DatabaseConnection
 
                 auto conn = Connection();
 
-                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT d.product_name FROM orders o JOIN order_details d ON o.order_id = d.order_id WHERE o.order_id = ? AND o.order_time = ?"));
+                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("SELECT d.product_name FROM order_info o JOIN order_details d ON o.order_id = d.order_id WHERE o.order_id = ? AND o.order_time = ?"));
                 pstmt->setString(1, std::string(orderId));
                 pstmt->setString(2, std::string(date));
 
@@ -66,9 +66,18 @@ class TaskPlanner : public DatabaseConnection
                 else
                 {
                     assignTasksToRobot(robotId, std::move(tasks));
+
+                    std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("UPDATE robot_info SET current_task_order_id = ?, current_task_order_time = ? WHERE robot_id = ?"));
+                    pstmt->setString(1, std::string(orderId));
+                    pstmt->setString(2, std::string(date));
+                    pstmt->setInt(3, robotId);
+                    pstmt->execute();
                 }
 
-                return crow::response(200, "Success\n");
+                json response;
+                response["robot_id"] = robotId;
+
+                return crow::response(response.dump());
             });
 
             CROW_BP_ROUTE(bp, "/process").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
@@ -79,11 +88,7 @@ class TaskPlanner : public DatabaseConnection
                 int robotId = data["robot_id"].i();
                 std::string process = data["process"].s();
 
-                if (process == "arrival")
-                {
-                    setRobotStatus(robotId, "Picking");
-                }
-                else if (process == "finish")
+                if (process == "finish")
                 {
                     setIsNext(robotId, true);
                     cv.notify_all();
@@ -108,6 +113,20 @@ class TaskPlanner : public DatabaseConnection
                         setIsEnd(id, true);
                     }
                 }
+
+                return crow::response(200, "Success\n");
+            });
+
+            CROW_BP_ROUTE(bp, "/update").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
+            {
+                auto data = crow::json::load(req.body);
+                if (!data) { return crow::response(400, "Invalid JSON"); }
+                std::cout << data << std::endl;
+
+                auto robotId = data["robot_id"];
+                auto status = data["status"];
+
+                setRobotStatus(int(robotId), std::string(status));
 
                 return crow::response(200, "Success\n");
             });
