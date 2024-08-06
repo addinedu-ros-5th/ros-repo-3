@@ -11,7 +11,6 @@ from PyQt5.QtWidgets import *
 
 from functools import partial
 
-
 def path():
     current_path = os.path.abspath(__file__)
     current_dir = os.path.dirname(current_path)
@@ -23,9 +22,8 @@ form = uic.loadUiType(current_dir + "/odw.ui")[0]
 class OutboundDeliveryWorkerClass(QMainWindow, form):
     def __init__(self):
         super().__init__()
-
         self.ui_init()
-        self.pulling()
+        self.update_order_list()
         self.update_data()
         
     def get_local_ip(self):
@@ -58,14 +56,9 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         
     def back(self):
         self.stackedWidget.setCurrentWidget(self.order_page)
-        
-    def end(self):
-        address = self.get_local_ip()
-        url = f"http://{address}:5000/task/process"
-        json = {"robot_id": self.id, "process": "finish"}
-        requests.post(url, json=json)
+        self.stop_detail_pulling()
 
-    def pulling(self):
+    def update_order_list(self):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_data)
         self.timer.start(2000)
@@ -86,9 +79,9 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
     def update_data(self):
         selected_date = self.date_edit.date().toString("yyyyMMdd")
         data = self.check_new_data(selected_date)
-        self.display_orders(data)
+        self.display_order_list(data)
 
-    def display_orders(self, data):
+    def display_order_list(self, data):
         current_orders = set()
         new_widgets = {}
         
@@ -111,7 +104,7 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             order_time_label.setAlignment(Qt.AlignCenter)
 
             order_button = QPushButton("확인")
-            order_button.clicked.connect(partial(self.get_order_details, order_id))
+            order_button.clicked.connect(partial(self.start_detail_pulling, order_id))
 
             order_layout.addWidget(order_id_label)
             order_layout.addWidget(order_time_label)
@@ -130,6 +123,17 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.orders_displayed = current_orders
         self.widgets.update(new_widgets)
 
+    def start_detail_pulling(self, order_id):
+        self.stop_detail_pulling()
+        self.order_id = order_id
+        self.detail_timer = QTimer(self)
+        self.detail_timer.timeout.connect(lambda: self.get_order_details(self.order_id))
+        self.detail_timer.start(2000)
+
+    def stop_detail_pulling(self):
+        if hasattr(self, 'detail_timer'):
+            self.detail_timer.stop()
+
     def get_order_details(self, order_id):
         address = self.get_local_ip()
         url = f"http://{address}:5000/database/order_detail?order_id={order_id}"
@@ -137,12 +141,11 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         response.raise_for_status()
         order_details = response.json()
         self.stackedWidget.setCurrentWidget(self.order_info)
-        self.show_order_details(order_details, order_id)
+        self.display_order_detail(order_details, order_id)
 
-    def show_order_details(self, order_details, order_id):
+    def display_order_detail(self, order_details, order_id):
         
         self.assign_btn.clicked.connect(lambda: self.assign_robot(order_id))
-        self.end_btn.clicked.connect(self.end)
         for i in reversed(range(self.order_detail_layout.count())):
             widget = self.order_detail_layout.itemAt(i).widget()
             if widget is not None:
@@ -172,15 +175,43 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             image_label.setPixmap(pixmap)
             image_label.setScaledContents(True)
             image_label.setFixedSize(100, 100)
-
+            
+            finish_button = QPushButton("완료")
+            finish_button.clicked.connect(partial(self.end_all, order_detail_widget))
+            
+            self.end_btn.clicked.connect(partial(self.end, order_id, order_detail_widget))
+            
             order_detail_layout.addWidget(image_label)
             order_detail_layout.addWidget(product_name_label)
-            order_detail_layout.addWidget(quantity_label)
+            
+            if quantity == "0":
+                order_detail_layout.removeWidget(quantity_label)
+                order_detail_layout.addWidget(finish_button)
+            else:
+                order_detail_layout.addWidget(quantity_label)
+
 
             self.order_detail_layout.addWidget(order_detail_widget)
             new_widgets[order_id] = order_detail_widget
 
         self.detail_widgets = new_widgets
+        
+    def end_all(self, widget):
+        widget.deleteLater()
+        
+    def end(self, order_id, product_name):
+        address = self.get_local_ip()
+        url = f"http://{address}:5000/task/process"
+        json = {"robot_id": self.id, "process": "finish"}
+        requests.post(url, json=json)
+        
+        url = f"http://{address}:5000/database/delete"
+        json = {'order_id': order_id, "product_name": product_name}
+        try:
+            response = requests.post(url, json=json)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            QMessageBox.warning(self, "Error", "Failed to delete item from database.")
 
     def get_image_path(self, product_name):
         address = self.get_local_ip()
