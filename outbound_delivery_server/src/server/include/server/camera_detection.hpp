@@ -27,9 +27,14 @@ class CameraDetection : public rclcpp::Node
                 auto robotDetection = data["robots"];
                 auto personDetection = data["persons"];
 
-                if (boxDetection == 1 || robotDetection == 1 || personDetection == 1)
+                if (personDetection == 1)
                 {
                     detection_msg.data = 1;
+                    publisher_->publish(detection_msg);
+                }
+                else if (boxDetection == 1 || robotDetection == 1)
+                {
+                    detection_msg.data = 2;
                     publisher_->publish(detection_msg);
                 }
                 else
