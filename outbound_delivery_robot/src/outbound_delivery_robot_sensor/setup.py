@@ -20,8 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'rfid_publisher_node = rfid_reader.rfid_publisher_node:main',
-            'rfid_subscriber_node = rfid_reader.rfid_subscriber_node:main',
+            'rfid_publisher_node = rfid_reader.tag_reader:main',
             'ultrasonic_sensor_node = ultrasonic_sensor.ultrasonic_sensor_node:main',
             'ultrasonic_sensor = ultrasonic_sensor.ultrasonic_sensor:main',
         ],
