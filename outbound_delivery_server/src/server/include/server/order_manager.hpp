@@ -123,6 +123,29 @@ class OrderManager : public DatabaseConnection
 
                 return crow::response(imageInfo.dump());
             });
+
+            CROW_BP_ROUTE(bp, "/delete").methods(crow::HTTPMethod::POST)([this](const crow::request& req)
+            {
+                auto data = crow::json::load(req.body);
+                if (!data) { return crow::response(400, "Invalid param"); }
+
+                auto conn = Connection();
+
+                auto orderId = data["order_id"];
+                auto productName = data["product_name"];
+
+                std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement("DELETE FROM order_details WHERE order_id = ? AND product_name = ?"));
+                pstmt->setString(1, std::string(orderId));
+                pstmt->setString(2, std::string(productName));
+                pstmt->execute();
+
+                std::unique_ptr<sql::PreparedStatement> pstmt1(conn->prepareStatement("DELETE FROM order_info WHERE order_id = ? AND NOT EXISTS ( SELECT 1 FROM order_details WHERE order_id = ? )"));
+                pstmt1->setString(1, std::string(orderId));
+                pstmt1->setString(2, std::string(orderId));
+                pstmt1->execute();
+
+                return crow::response(200);
+            });
         }
 
         crow::Blueprint& getBlueprint()
