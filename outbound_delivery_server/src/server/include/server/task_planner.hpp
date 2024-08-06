@@ -107,7 +107,7 @@ class TaskPlanner : public DatabaseConnection
 
                 if (process == "end")
                 {
-                    robotId = getRobotId("Unloading");
+                    robotId = getRobotId("UNLOADING");
                     for(const auto& id : robotId)
                     {
                         setIsEnd(id, true);
