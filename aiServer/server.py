@@ -7,6 +7,7 @@ import requests
 import threading
 import time
 from model import load_model
+
 class Server:
     def __init__(self, host, port, odServer_url):
         self.host = host
@@ -23,9 +24,10 @@ class Server:
         self.load_models()
         self.detect_thread = None
         self.send_thread = None
-        self.frame_lock = threading.Lock()  # 프레임과 감지 결과를 동기화하기 위한 잠금
-        self.running = True  # 상태 플래그
-        self.current_frame = None  # 현재 프레임을 저장할 변수
+        self.frame_lock = threading.Lock()
+        self.running = True
+        self.current_frame = None
+
     def load_models(self):
         try:
             self.robot_model = load_model('models/robot_best.pt')
@@ -33,6 +35,7 @@ class Server:
             self.person_model = load_model('models/yolov8n-pose.pt')
         except Exception as e:
             print(f"모델 로드 중 오류 발생: {e}")
+
     def run(self):
         try:
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,16 +44,15 @@ class Server:
             print('클라이언트 연결 대기')
             self.client_socket, address = self.server_socket.accept()
             print('클라이언트 IP 주소:', address[0])
-            # 객체 감지와 결과 전송을 위한 스레드 생성 및 시작
             self.detect_thread = threading.Thread(target=self.detect_objects_loop)
             self.send_thread = threading.Thread(target=self.send_detection_results_loop)
             self.detect_thread.start()
             self.send_thread.start()
-            self.receive_frames()  # 메인 스레드에서 프레임 수신
+            self.receive_frames()
         except Exception as e:
             print(f"예외 발생: {e}")
         finally:
-            self.running = False  # 상태 플래그를 통해 스레드 종료 유도
+            self.running = False
             if self.detect_thread:
                 self.detect_thread.join()
             if self.send_thread:
@@ -58,6 +60,7 @@ class Server:
             self.close_connections()
             cv2.destroyAllWindows()
             print('연결 종료')
+
     def receive_frames(self):
         try:
             while self.running:
@@ -83,20 +86,21 @@ class Server:
                         continue
                     print(f"프레임 사이즈: {frame.shape}")
                     cv2.imshow('Frame', frame)
-                    cv2.waitKey(1)  # 화면 갱신
+                    cv2.waitKey(1)
                     with self.frame_lock:
                         self.current_frame = frame
                 except Exception as e:
                     print(f"프레임 처리 중 오류 발생: {e}")
         except Exception as e:
             print(f"예외 발생: {e}")
+
     def detect_objects_loop(self):
         while self.running:
             with self.frame_lock:
                 if self.current_frame is not None:
                     frame = self.current_frame
                 else:
-                    time.sleep(0.1)  # 프레임이 아직 없으면 잠시 대기
+                    time.sleep(0.1)
                     continue
             input_tensor, (original_width, original_height) = self.preprocess_image(frame)
             with torch.no_grad():
@@ -110,6 +114,7 @@ class Server:
             print("robot가 인식되었습니다:", self.detected_robots)
             print("person가 인식되었습니다:", self.detected_persons)
             time.sleep(1)
+
     def send_detection_results_loop(self):
         while self.running:
             results = {
@@ -123,12 +128,15 @@ class Server:
                 print("객체 감지 결과 전송 성공:", response.status_code)
             except requests.exceptions.RequestException as e:
                 print(f"객체 감지 결과 전송 중 오류 발생: {e}")
-            time.sleep(1)  # 감지 결과 전송 간격
+            time.sleep(1)
+
     def draw_boxes(self, frame, boxes, color, label):
         for (x_min, y_min, x_max, y_max, confidence) in boxes:
             cv2.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), color, 2)
             label_with_confidence = f"{label} {confidence:.2f}"
             cv2.putText(frame, label_with_confidence, (int(x_min), int(y_min)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+
+
     def preprocess_image(self, frame):
         height, width = frame.shape[:2]
         resized_frame = cv2.resize(frame, (320, 320))
@@ -136,6 +144,7 @@ class Server:
         input_tensor = torch.tensor(resized_frame).float() / 255.0
         input_tensor = input_tensor.unsqueeze(0)
         return input_tensor, (width, height)
+
     def postprocess_outputs(self, outputs, original_width, original_height):
         detected_boxes = []
         threshold = 0.75
@@ -152,14 +161,16 @@ class Server:
                     y_max = y_max * original_height / 320
                     detected_boxes.append((x_min, y_min, x_max, y_max, confidence))
         return detected_boxes
+
     def close_connections(self):
         if self.client_socket:
             self.client_socket.close()
         if self.server_socket:
             self.server_socket.close()
+
 if __name__ == "__main__":
-    HOST = '192.168.1.103'
-    PORT = 8080
-    ODSERVER_URL = 'http://192.168.1.100:5000/camera/detection'
+    HOST = ''
+    PORT = 
+    ODSERVER_URL = ''
     server = Server(HOST, PORT, ODSERVER_URL)
     server.run()
