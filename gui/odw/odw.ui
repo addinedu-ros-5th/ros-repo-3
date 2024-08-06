@@ -41,7 +41,7 @@
     <string notr="true">background-color: rgb(255, 255, 255);</string>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="order_page">
     <widget class="QLabel" name="label_2">
@@ -63,19 +63,6 @@
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="emergency_btn">
-     <property name="geometry">
-      <rect>
-       <x>400</x>
-       <y>20</y>
-       <width>90</width>
-       <height>30</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>비상</string>
      </property>
     </widget>
     <widget class="QScrollArea" name="scrollArea">
