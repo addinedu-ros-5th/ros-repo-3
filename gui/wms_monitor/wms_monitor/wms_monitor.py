@@ -2,18 +2,13 @@ import os
 import sys
 import yaml
 import math
-import json  # json 모듈 임포트
+import json
 import requests
 from PyQt5 import uic
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from threading import Thread
-import socket
-import struct
-import pickle
-import cv2
-from multiprocessing import Process
 
 import rclpy as rp
 from rclpy.node import Node
@@ -88,7 +83,6 @@ class AmclSubscriber(Node):
             self.amcl_callback3,
             amcl_pose_qos)
 
-        
     def amcl_callback1(self, amcl):
         global amcl_1
         amcl_1 = amcl
@@ -113,7 +107,6 @@ class PathSubscriber(Node):
             10
         )
     
-
         self.sub2 = self.create_subscription(
             AStar,
             'planned_path_2',
@@ -143,73 +136,24 @@ class PathSubscriber(Node):
         path_3 = path
         start_point_3 = amcl_3
 
-class Client:
-    def __init__(self, host, port, gui_update_function):
-        self.host = host
-        self.port = port
-        self.client_socket = None
-        self.gui_update_function = gui_update_function
-
-    def connect(self):
-        try:
-            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect((self.host, self.port))
-            print('서버에 연결되었습니다.')
-            self.receive_frames()
-        except Exception as e:
-            print(f"예외 발생: {e}")
-        finally:
-            self.close_connection()
-            print('연결 종료')
-
-    def receive_frames(self):
-        try:
-            while True:
-                data_size_packed = self.client_socket.recv(4)
-                if not data_size_packed:
-                    break
-                data_size = struct.unpack(">L", data_size_packed)[0]
-                frame_data = b""
-                while len(frame_data) < data_size:
-                    packet = self.client_socket.recv(data_size - len(frame_data))
-                    if not packet:
-                        break
-                    frame_data += packet
-                if len(frame_data) < data_size:
-                    print("연결 종료: 프레임 데이터를 모두 수신하지 못했습니다.")
-                    break
-                print("수신 프레임 크기: {} bytes".format(data_size))
-                try:
-                    encoded_frame = pickle.loads(frame_data)
-                    frame = cv2.imdecode(encoded_frame, cv2.IMREAD_COLOR)
-                    if frame is None:
-                        print("프레임 디코딩 실패")
-                        continue
-                    self.gui_update_function(frame)
-                except Exception as e:
-                    print(f"프레임 처리 중 오류 발생: {e}")
-        except Exception as e:
-            print(f"예외 발생: {e}")
-
-    def close_connection(self):
-        if self.client_socket:
-            self.client_socket.close()
-
 class WindowClass(QMainWindow, from_class):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
         self.setWindowTitle("OD WMS")
         self.map_label = self.findChild(QLabel, 'map')
-        self.cam_label = self.findChild(QLabel, 'cam_label')  # 'cam_label' 가져오기
-        self.robot_table = self.findChild(QTableWidget, 'task_state')  # 'task_state'로 이름 수정
+        self.robot_table = self.findChild(QTableWidget, 'task_state')
 
         if self.robot_table is None:
             print("Failed to find task_state. Check the UI file for the correct widget name.")
         else:
             print("task_state found successfully.")
-            self.robot_table.setColumnCount(3)
-            self.robot_table.setHorizontalHeaderLabels(["Status", "Task", "Goal"])
+            self.robot_table.setColumnCount(5)
+            self.robot_table.setHorizontalHeaderLabels(["Date", "ID", "Task", "Goal", "Status"])
+
+            # 로봇 ID 설정
+            for row in range(3):
+                self.robot_table.setItem(row, 1, QTableWidgetItem(f"od_robot{row+1}"))
 
         self.load_map_image()
 
@@ -223,28 +167,6 @@ class WindowClass(QMainWindow, from_class):
         self.server_timer.timeout.connect(self.update_table)
         self.server_timer.start(2000)
 
-        # 클라이언트 실행 및 데이터 수신 스레드 시작
-        self.client_thread = Thread(target=self.start_client)
-        self.client_thread.start()
-
-    def start_client(self):
-        HOST = '192.168.1.103'  # 서버 IP 주소
-        PORT = 8080
-        self.client = Client(HOST, PORT, self.update_cam_label)
-        self.client.connect()
-        
-    def update_cam_label(self, frame):
-        qt_img = self.convert_cv_qt(frame)
-        self.cam_label.setPixmap(qt_img)
-
-    def convert_cv_qt(self, cv_img):
-        """Convert from an opencv image to QPixmap"""
-        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-        h, w, ch = rgb_image.shape
-        bytes_per_line = ch * w
-        convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        return QPixmap.fromImage(convert_to_Qt_format)
-    
     def load_map_image(self):
         self.pixmap = QPixmap(image_path)
         self.height = self.pixmap.size().height()
@@ -287,7 +209,7 @@ class WindowClass(QMainWindow, from_class):
             # 1번 로봇 좌표 및 방향
             x1, y1 = self.calc_grid_position(amcl_1.pose.pose.position.y, amcl_1.pose.pose.position.x)
             x1 = self.width - x1
-            theta1 = self.get_yaw(amcl_1.pose.pose.orientation) 
+            theta1 = self.get_yaw(amcl_1.pose.pose.orientation)
             painter.setPen(QPen(Qt.red, 10, Qt.SolidLine))
             painter.drawPoint(int((x1 - 50) * self.image_scale), int((self.height - y1 + 2) * self.image_scale))
             painter.drawText(int((x1 - 48) * self.image_scale), int((self.height - y1 + 2) * self.image_scale + 5), '1')
@@ -341,13 +263,15 @@ class WindowClass(QMainWindow, from_class):
         if items:
             self.robot_table.setRowCount(len(items))
             for i, item in enumerate(items):
-                self.robot_table.setItem(i, 0, QTableWidgetItem(str(item['robot_status'])))
-                self.robot_table.setItem(i, 1, QTableWidgetItem(str(item['robot_task'])))
-                self.robot_table.setItem(i, 2, QTableWidgetItem(str(item['robot_goal'])))
+                self.robot_table.setItem(i, 0, QTableWidgetItem(str(item['order_date'])))
+                self.robot_table.setItem(i, 1, QTableWidgetItem(str(item['order_id'])))
+                self.robot_table.setItem(i, 2, QTableWidgetItem(str(item['robot_task'])))
+                self.robot_table.setItem(i, 3, QTableWidgetItem(str(item['robot_goal'])))
+                self.robot_table.setItem(i, 4, QTableWidgetItem(str(item['robot_status'])))
         else:
             print("No data to display in the table.")
 
-def ros_process():
+def ros_thread():
     rp.init()
     amcl_node = AmclSubscriber()
     path_node = PathSubscriber()
@@ -364,18 +288,11 @@ def ros_process():
         path_node.destroy_node()
         rp.shutdown()
 
-def gui_process():
+if __name__ == "__main__":
+    ros_thread_instance = Thread(target=ros_thread)
+    ros_thread_instance.start()
+    
     app = QApplication(sys.argv)
     mainWindow = WindowClass()
     mainWindow.show()
     sys.exit(app.exec_())
-
-if __name__ == "__main__":
-    ros_proc = Process(target=ros_process)
-    gui_proc = Process(target=gui_process)
-    
-    ros_proc.start()
-    gui_proc.start()
-    
-    ros_proc.join()
-    gui_proc.join()
