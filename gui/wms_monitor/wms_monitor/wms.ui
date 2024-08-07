@@ -16,21 +16,21 @@
   <widget class="QGroupBox" name="Task_groupBox4">
    <property name="geometry">
     <rect>
-     <x>820</x>
+     <x>630</x>
      <y>530</y>
-     <width>421</width>
+     <width>611</width>
      <height>161</height>
     </rect>
    </property>
    <property name="title">
-    <string>Robot Task</string>
+    <string>Robot Task Queue</string>
    </property>
    <widget class="QTableWidget" name="task_state">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>30</y>
-      <width>401</width>
+      <width>591</width>
       <height>121</height>
      </rect>
     </property>
@@ -51,7 +51,12 @@
     </row>
     <column>
      <property name="text">
-      <string>State</string>
+      <string>Date</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>ID</string>
      </property>
     </column>
     <column>
@@ -62,6 +67,11 @@
     <column>
      <property name="text">
       <string>Goal</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>State</string>
      </property>
     </column>
    </widget>
@@ -175,7 +185,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>100</y>
+      <y>90</y>
       <width>31</width>
       <height>41</height>
      </rect>
@@ -188,7 +198,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>100</y>
+      <y>90</y>
       <width>31</width>
       <height>41</height>
      </rect>
@@ -201,7 +211,7 @@
     <property name="geometry">
      <rect>
       <x>270</x>
-      <y>100</y>
+      <y>90</y>
       <width>31</width>
       <height>41</height>
      </rect>
@@ -214,7 +224,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>100</y>
+      <y>90</y>
       <width>31</width>
       <height>41</height>
      </rect>
@@ -227,7 +237,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>340</y>
+      <y>370</y>
       <width>31</width>
       <height>41</height>
      </rect>
@@ -240,7 +250,7 @@
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>340</y>
+      <y>370</y>
       <width>31</width>
       <height>41</height>
      </rect>
@@ -253,7 +263,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>340</y>
+      <y>370</y>
       <width>31</width>
       <height>41</height>
      </rect>
@@ -266,7 +276,7 @@
     <property name="geometry">
      <rect>
       <x>270</x>
-      <y>340</y>
+      <y>370</y>
       <width>31</width>
       <height>41</height>
      </rect>
@@ -323,39 +333,6 @@
     <property name="alignment">
      <set>Qt::AlignCenter</set>
     </property>
-   </widget>
-  </widget>
-  <widget class="QGroupBox" name="Queue_groupBox3">
-   <property name="geometry">
-    <rect>
-     <x>380</x>
-     <y>530</y>
-     <width>421</width>
-     <height>161</height>
-    </rect>
-   </property>
-   <property name="title">
-    <string>Task Queue</string>
-   </property>
-   <widget class="QTableWidget" name="task_queue">
-    <property name="geometry">
-     <rect>
-      <x>15</x>
-      <y>30</y>
-      <width>391</width>
-      <height>121</height>
-     </rect>
-    </property>
-    <column>
-     <property name="text">
-      <string>Task</string>
-     </property>
-    </column>
-    <column>
-     <property name="text">
-      <string>Goal</string>
-     </property>
-    </column>
    </widget>
   </widget>
  </widget>
