@@ -41,7 +41,7 @@
     <string notr="true">background-color: rgb(255, 255, 255);</string>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="order_page">
     <widget class="QLabel" name="label_2">
@@ -380,7 +380,7 @@ border: None;</string>
       </font>
      </property>
      <property name="text">
-      <string>완료</string>
+      <string>닫기</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_8">

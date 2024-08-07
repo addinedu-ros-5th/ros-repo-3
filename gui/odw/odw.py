@@ -53,6 +53,8 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         self.date_edit.dateChanged.connect(self.update_data)
         
         self.back_btn.clicked.connect(self.back)
+        self.assign_btn.clicked.connect(lambda: self.assign_robot(self.order_id))
+        self.end_btn.clicked.connect(self.end)
         
     def back(self):
         self.stackedWidget.setCurrentWidget(self.order_page)
@@ -104,7 +106,7 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             order_time_label.setAlignment(Qt.AlignCenter)
 
             order_button = QPushButton("확인")
-            order_button.clicked.connect(partial(self.start_detail_pulling, order_id))
+            order_button.clicked.connect(partial(self.detail_page, order_id))
 
             order_layout.addWidget(order_id_label)
             order_layout.addWidget(order_time_label)
@@ -122,6 +124,11 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
 
         self.orders_displayed = current_orders
         self.widgets.update(new_widgets)
+        
+    def detail_page(self, order_id):
+        self.stackedWidget.setCurrentWidget(self.order_info)
+        self.start_detail_pulling(order_id)
+        self.get_order_details(order_id)
 
     def start_detail_pulling(self, order_id):
         self.stop_detail_pulling()
@@ -137,15 +144,15 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
     def get_order_details(self, order_id):
         address = self.get_local_ip()
         url = f"http://{address}:5000/database/order_detail?order_id={order_id}"
-        response = requests.get(url)
-        response.raise_for_status()
-        order_details = response.json()
-        self.stackedWidget.setCurrentWidget(self.order_info)
-        self.display_order_detail(order_details, order_id)
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            order_details = response.json()
+            self.display_order_detail(order_details, order_id)
+        except requests.exceptions.RequestException as e:
+            return []
 
     def display_order_detail(self, order_details, order_id):
-        
-        self.assign_btn.clicked.connect(lambda: self.assign_robot(order_id))
         for i in reversed(range(self.order_detail_layout.count())):
             widget = self.order_detail_layout.itemAt(i).widget()
             if widget is not None:
@@ -177,9 +184,7 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             image_label.setFixedSize(100, 100)
             
             finish_button = QPushButton("완료")
-            finish_button.clicked.connect(partial(self.end_all, order_detail_widget))
-            
-            self.end_btn.clicked.connect(partial(self.end, order_id, order_detail_widget))
+            finish_button.clicked.connect(partial(self.end_all, order_detail_widget, order_id, product_name))
             
             order_detail_layout.addWidget(image_label)
             order_detail_layout.addWidget(product_name_label)
@@ -190,21 +195,14 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             else:
                 order_detail_layout.addWidget(quantity_label)
 
-
             self.order_detail_layout.addWidget(order_detail_widget)
             new_widgets[order_id] = order_detail_widget
 
         self.detail_widgets = new_widgets
         
-    def end_all(self, widget):
+    def end_all(self, widget, order_id, product_name):
         widget.deleteLater()
-        
-    def end(self, order_id, product_name):
         address = self.get_local_ip()
-        url = f"http://{address}:5000/task/process"
-        json = {"robot_id": self.id, "process": "finish"}
-        requests.post(url, json=json)
-        
         url = f"http://{address}:5000/database/delete"
         json = {'order_id': order_id, "product_name": product_name}
         try:
@@ -212,6 +210,17 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
             QMessageBox.warning(self, "Error", "Failed to delete item from database.")
+
+        url = f"http://{address}:5000/task/process"
+        json = {"robot_id": self.id, "process": "finish"}
+        try:
+            requests.post(url, json=json)
+        except requests.exceptions.RequestException as e:
+            QMessageBox.warning(self, "Error", "Failed to send.")
+        
+    def end(self):
+        self.stackedWidget.setCurrentWidget(self.order_page)
+        self.stop_detail_pulling()
 
     def get_image_path(self, product_name):
         address = self.get_local_ip()
@@ -223,6 +232,7 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
         return self.order_details
         
     def assign_robot(self, order_id):
+        print("assign_robot called with order_id:", order_id)
         address = self.get_local_ip()
         selected_date = self.date_edit.date().toString("yyyyMMdd")
         url = f"http://{address}:5000/task/manage"
@@ -235,7 +245,7 @@ class OutboundDeliveryWorkerClass(QMainWindow, form):
             QMessageBox.warning(self, "Robot", "All robot is assigned!!")
         else:
             self.robot_id.setText(str(self.id))
-
+            QMessageBox.information(self, "Robot", f"{self.id}번 로봇이 배정되었습니다.")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
