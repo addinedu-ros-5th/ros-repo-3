@@ -19,7 +19,7 @@ from outbound_delivery_robot_interfaces.msg import AStar
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-ui_file = os.path.join(current_dir, 'wms.ui')
+ui_file = os.path.join(current_dir, 'odm.ui')
 from_class = uic.loadUiType(ui_file)[0]
 
 yaml_file = os.path.join(current_dir, 'map.yaml')

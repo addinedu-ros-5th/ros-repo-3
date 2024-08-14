@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'camera_package'
+package_name = 'odm'
 
 setup(
     name=package_name,
@@ -11,20 +11,16 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=[
-        'setuptools',
-        'ultralytics'  # 추가된 부분
-    ],
+    install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='kjy',
-    maintainer_email='kjy@todo.todo',
+    maintainer='verlo',
+    maintainer_email='yohankim0423@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'camera_node = camera_package.camera_node:main',
-            'test_node = camera_package.test_node:main'
+            'odm_monitor = odm.odm_monitor:main'
         ],
     },
 )

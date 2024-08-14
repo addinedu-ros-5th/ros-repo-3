@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>wms_monitor</name>
+  <name>odm</name>
   <version>0.0.0</version>
   <description>WMS Monitor package for displaying robot positions</description>
   <maintainer email="yohankim0423@gmail.com">verlo</maintainer>

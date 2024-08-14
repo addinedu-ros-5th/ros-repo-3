@@ -11,12 +11,13 @@ import rclpy as rp
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy, QoSProfile
 
 # 현재 파일의 디렉토리 경로를 가져옵니다.
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # .ui 파일의 상대 경로를 설정합니다.
-ui_file = os.path.join(current_dir, 'wms.ui')
+ui_file = os.path.join(current_dir, 'odm.ui')
 
 # uic 모듈을 사용하여 .ui 파일을 로드합니다.
 from_class = uic.loadUiType(ui_file)[0]
@@ -32,6 +33,10 @@ with open(yaml_file, 'r') as file:
 # 이미지 파일의 절대 경로를 설정합니다.
 image_path = os.path.join(current_dir, image_file)
 
+# 맵의 해상도와 원점 좌표 설정
+map_resolution = map_yaml_data['resolution']
+map_origin = map_yaml_data['origin'][:2]
+
 # 전역 변수 설정
 robot_positions = {
     'robot1': [-2.75, -1.6],  # 로봇 1의 초기 위치(x, y)
@@ -42,20 +47,68 @@ robot_positions = {
 
 # AmclSubscriber 클래스 정의
 class AmclSubscriber(Node):
-    def __init__(self, robot_name, topic_name):
-        super().__init__(f'{robot_name}_amcl_subscriber')
-        self.robot_name = robot_name
-        self.subscription = self.create_subscription(
-            PoseWithCovarianceStamped,
-            topic_name,
-            self.amcl_callback,
-            10
+
+    def __init__(self):
+        super().__init__('amcl_subscriber')
+
+        amcl_pose_qos = QoSProfile(
+            durability=QoSDurabilityPolicy.VOLATILE,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=10
         )
 
-    def amcl_callback(self, msg):
+        self.subscriber1 = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose_1',
+            self.amcl_callback_1,
+            amcl_pose_qos
+        )
+
+        self.subscriber2 = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose_2',
+            self.amcl_callback_2,
+            amcl_pose_qos
+        )
+
+        self.subscriber3 = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose_3',
+            self.amcl_callback_3,
+            amcl_pose_qos
+        )
+
+        self.subscriber4 = self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose',
+            self.amcl_callback_4,
+            amcl_pose_qos
+        )
+
+    def amcl_callback_1(self, msg):
         global robot_positions
-        robot_positions[self.robot_name][0] = msg.pose.pose.position.x
-        robot_positions[self.robot_name][1] = msg.pose.pose.position.y
+        robot_positions['robot1'][0] = msg.pose.pose.position.x
+        robot_positions['robot1'][1] = msg.pose.pose.position.y
+        print(f"Updated robot1 position to {robot_positions['robot1']}")  # 로그 출력 추가
+
+    def amcl_callback_2(self, msg):
+        global robot_positions
+        robot_positions['robot2'][0] = msg.pose.pose.position.x
+        robot_positions['robot2'][1] = msg.pose.pose.position.y
+        print(f"Updated robot2 position to {robot_positions['robot2']}")  # 로그 출력 추가
+
+    def amcl_callback_3(self, msg):
+        global robot_positions
+        robot_positions['robot3'][0] = msg.pose.pose.position.x
+        robot_positions['robot3'][1] = msg.pose.pose.position.y
+        print(f"Updated robot3 position to {robot_positions['robot3']}")  # 로그 출력 추가
+
+    def amcl_callback_4(self, msg):
+        global robot_positions
+        robot_positions['robot4'][0] = msg.pose.pose.position.x
+        robot_positions['robot4'][1] = msg.pose.pose.position.y
+        print(f"Updated robot4 position to {robot_positions['robot4']}")  # 로그 출력 추가
 
 # 메인 윈도우 클래스 정의
 class WindowClass(QMainWindow, from_class):
@@ -133,11 +186,17 @@ class WindowClass(QMainWindow, from_class):
 
         # QLabel에 업데이트된 pixmap 설정
         self.map_label.setPixmap(updated_pixmap)
+        print(f"Map updated with positions: {robot_positions}")  # 로그 출력 추가
 
     def calc_grid_position(self, x, y):
-        pos_x = (x - self.map_origin[0]) / self.map_resolution * self.image_scale
-        pos_y = (y - self.map_origin[1]) / self.map_resolution * self.image_scale
-        return int((self.width - pos_x)), int(pos_y)
+        # 이미지 스케일에 따른 좌표 변환
+        pos_x = (x - self.map_origin[0]) / self.map_resolution
+        pos_y = (y - self.map_origin[1]) / self.map_resolution
+        return int((self.width * self.image_scale - pos_x * self.image_scale)), int(pos_y * self.image_scale)
+
+    def closeEvent(self, event):
+        rp.shutdown()  # ROS2 종료
+        super().closeEvent(event)  # 윈도우 종료
 
 def main():
     rp.init()
@@ -148,14 +207,8 @@ def main():
     window.show()
 
     # AmclSubscriber 노드 추가
-    amcl_subscriber_1 = AmclSubscriber('robot1', 'amcl_pose')
-    amcl_subscriber_2 = AmclSubscriber('robot2', 'amcl_pose_2')
-    amcl_subscriber_3 = AmclSubscriber('robot3', 'amcl_pose_3')
-    amcl_subscriber_4 = AmclSubscriber('robot4', 'amcl_pose_4')
-    executor.add_node(amcl_subscriber_1)
-    executor.add_node(amcl_subscriber_2)
-    executor.add_node(amcl_subscriber_3)
-    executor.add_node(amcl_subscriber_4)
+    amcl_subscriber = AmclSubscriber()
+    executor.add_node(amcl_subscriber)
 
     # ROS2 스레드 실행
     thread = Thread(target=executor.spin)
