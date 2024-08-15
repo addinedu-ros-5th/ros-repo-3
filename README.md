@@ -38,17 +38,16 @@
 #### 2-4. 시나리오
 ![Scenario](https://github.com/user-attachments/assets/ed460258-0664-4e46-8f7f-e30f44fe4cb3)
 
-
 #### 2-5. 맵 구성
 ![Map](https://github.com/user-attachments/assets/b9aeeaaf-e9d5-4072-9365-55e07e4e6ecb)
 
 ### 3. 프로젝트 구현
 
 #### 3-1. Customer GUI (고객 GUI)
-[Customer GUI](https://github.com/user-attachments/assets/6d4809bf-bae4-4466-b7ff-e7c129452c90)
+[![Customer GUI](https://github.com/user-attachments/assets/30b8a890-67cb-4fc9-a86b-bf05259bed20)](https://youtube.com/shorts/9fw4idn_-Tk)
 
 #### 3-2. Outbound Delivery Worker GUI (작업자 GUI)
-[ODW GUI](https://github.com/user-attachments/assets/d5da5cd9-1b49-4de9-a33a-f32d033b3a10)
+[![Worker GUI](https://github.com/user-attachments/assets/e4d9f1f3-2f96-433b-a919-a25abbc0af27)](https://youtube.com/shorts/qxyMQt97Qd8)
 
 #### 3-3. SLAM
 ![Slam](https://github.com/user-attachments/assets/58ca4252-34d6-4b2a-8d2b-6a2246fca718)
@@ -62,10 +61,10 @@
 #### 3-6. Robot & Box Model
 ![Detection](https://github.com/user-attachments/assets/63f23e76-42bb-4bbc-afdb-2a27ee90a1c0)
 
-[Camera](https://github.com/user-attachments/assets/a5373405-3eeb-45ea-bc23-dad0eff11cda)
+[![Camera](https://github.com/user-attachments/assets/db3dbbda-f09d-4950-8051-a091096d1af3)](https://youtube.com/shorts/RrZ8wz116vg)
 
 #### 3-7. Outbound Delivery Management GUI (관제 GUI)
-[ODM GUI](https://github.com/user-attachments/assets/2f7feb59-6b50-4c44-8554-acfe22041bc5)
+[![ODM GUI](https://github.com/user-attachments/assets/83defa56-85db-48b3-a12a-693bc0dce509)](https://youtu.be/g-ZS3oF_-eY)
 
 ### 4. 프로젝트 시연
-[![Video Label](https://i9.ytimg.com/vi_webp/1v3poAZRnrM/mq3.webp?sqp=CMCi8bUG-oaymwEmCMACELQB8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGEcgWShlMA8=&rs=AOn4CLA3iRfEMrpPHz2OKzb7NvMd2cwQ0w)](https://youtu.be/1v3poAZRnrM)
+[![Video](https://github.com/user-attachments/assets/c47519ab-30b5-42fa-8d59-e38724e7e5f5)](https://youtu.be/1v3poAZRnrM)
