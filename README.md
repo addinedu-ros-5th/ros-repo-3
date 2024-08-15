@@ -66,5 +66,8 @@
 #### 3-7. Outbound Delivery Management GUI (관제 GUI)
 [![ODM GUI](https://github.com/user-attachments/assets/83defa56-85db-48b3-a12a-693bc0dce509)](https://youtu.be/g-ZS3oF_-eY)
 
+#### 3-8. 동작 시나리오 예시
+![Movement](https://github.com/user-attachments/assets/a305dd58-9844-438c-8d9a-7b023b2cf77b)
+
 ### 4. 프로젝트 시연
 [![Video](https://github.com/user-attachments/assets/c47519ab-30b5-42fa-8d59-e38724e7e5f5)](https://youtu.be/1v3poAZRnrM)
