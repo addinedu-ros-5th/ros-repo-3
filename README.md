@@ -61,13 +61,7 @@
 #### 3-6. Robot & Box Model
 ![Detection](https://github.com/user-attachments/assets/63f23e76-42bb-4bbc-afdb-2a27ee90a1c0)
 
-##### 3-6-1. Robot
-![Robot Graph](https://github.com/user-attachments/assets/654744f0-628e-4514-9b11-f4f78dd929de)
-
-##### 3-6-2. Box
-![Box Graph](https://github.com/user-attachments/assets/be82febb-be48-4d4e-87a2-3c032b41845f)
-
-##### 3-6-3. Detection
+##### 3-6-1. Detection
 [![Camera](https://github.com/user-attachments/assets/db3dbbda-f09d-4950-8051-a091096d1af3)](https://youtube.com/shorts/RrZ8wz116vg)
 
 #### 3-7. Outbound Delivery Management GUI (관제 GUI)
